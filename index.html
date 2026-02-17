@@ -1,0 +1,3675 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FilmSpotter - Collaborative Video Review</title>
+    <!-- VERSION: 2.40 - Fixed nextFrame duplicate, participants timestamp, chat colors -->
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            height: 100vh;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        
+        .header {
+            background: #2d2d2d;
+            padding: 12px 20px;
+            border-bottom: 1px solid #404040;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            letter-spacing: 0.5px;
+        }
+        
+        .header-info {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            color: #b0b0b0;
+            font-size: 14px;
+        }
+        
+        .user-badge {
+            background: #0066cc;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        
+        .header-controls {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 6px 14px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+        
+        .btn:hover {
+            background: #0052a3;
+        }
+        
+        .btn-secondary {
+            background: #404040;
+        }
+        
+        .btn-secondary:hover {
+            background: #505050;
+        }
+        
+        .btn-danger {
+            background: #cc3300;
+        }
+        
+        .btn-danger:hover {
+            background: #a32900;
+        }
+        
+        .main-content {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .video-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow: auto;
+        }
+        
+        .video-setup {
+            background: #2d2d2d;
+            padding: 30px;
+            border-radius: 8px;
+            max-width: 600px;
+            margin: 40px auto;
+        }
+        
+        .video-setup h2 {
+            margin-bottom: 20px;
+            color: #fff;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #b0b0b0;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            background: #1a1a1a;
+            border: 1px solid #404040;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-size: 14px;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #0066cc;
+        }
+        
+        .video-container {
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            position: relative;
+        }
+        
+        video {
+            width: 100%;
+            display: block;
+        }
+        
+        .timeline-markers {
+            position: absolute;
+            bottom: 30px;
+            left: 0;
+            right: 0;
+            height: 8px;
+            pointer-events: none;
+        }
+        
+        .timeline-marker {
+            position: absolute;
+            width: 3px !important;
+            min-width: 3px !important;
+            max-width: 3px !important;
+            height: 8px;
+            cursor: pointer;
+            pointer-events: all;
+            transition: height 0.2s;
+            display: block;
+        }
+        
+        .timeline-marker:hover {
+            height: 12px;
+        }
+        
+        .video-controls {
+            background: #2d2d2d;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .video-metadata-collapsed {
+            margin-bottom: 15px;
+        }
+        
+        .metadata-toggle {
+            background: #1a1a1a;
+            border: 1px solid #404040;
+            color: #b0b0b0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            width: 100%;
+            text-align: left;
+            transition: all 0.2s;
+        }
+        
+        .metadata-toggle:hover {
+            background: #252525;
+            border-color: #505050;
+        }
+        
+        .metadata-toggle span {
+            display: inline-block;
+            transition: transform 0.2s;
+            margin-right: 5px;
+        }
+        
+        .metadata-content {
+            margin-top: 10px;
+            padding: 10px;
+            background: #1a1a1a;
+            border-radius: 4px;
+        }
+        
+        .metadata-content p {
+            margin: 5px 0;
+            font-size: 13px;
+            color: #b0b0b0;
+        }
+        
+        .timecode-display {
+            font-family: 'Courier New', monospace;
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+        
+        .playback-controls {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .frame-controls {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        
+        .frame-btn {
+            padding: 6px 12px;
+            background: #404040;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        .frame-btn:hover {
+            background: #505050;
+        }
+        
+        .mark-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .mark-controls input {
+            flex: 1;
+            padding: 8px;
+            background: #1a1a1a;
+            border: 1px solid #404040;
+            border-radius: 4px;
+            color: #e0e0e0;
+        }
+        
+        .sidebar {
+            width: 400px;
+            background: #2d2d2d;
+            border-left: 2px solid #404040;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar-tabs {
+            display: flex;
+            background: #1a1a1a;
+        }
+        
+        .events-filter {
+            padding: 10px;
+            background: #2d2d2d;
+            border-bottom: 1px solid #404040;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 12px;
+            background: #2d2d2d;
+            border: none;
+            color: #b0b0b0;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        
+        .tab.active {
+            color: #fff;
+            border-bottom-color: #0066cc;
+        }
+        
+        .tab-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+        
+        .tab-content .hit-point {
+            background: #1a1a1a;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+            border-left: 3px solid;
+        }
+        
+        .tab-content .hit-point-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .tab-content .hit-point-time {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .marker-label {
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+        
+        .timecode-editable {
+            cursor: pointer;
+        }
+        
+        .timecode-editable:hover {
+            text-decoration: underline;
+        }
+        
+        .tab-content .hit-point-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .icon-btn {
+            background: none;
+            border: none;
+            color: #b0b0b0;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 3px;
+        }
+        
+        .icon-btn:hover {
+            background: #404040;
+            color: #fff;
+        }
+        
+        .tab-content .hit-point-note {
+            color: #e0e0e0;
+            font-size: 14px;
+        }
+        
+        .tab-content .hit-point-user {
+            color: #808080;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+        
+        .chat-messages {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .chat-message {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        
+        .chat-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+        
+        .chat-user {
+            color: #0066cc;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        
+        .chat-timestamp {
+            font-size: 11px;
+            color: #808080;
+        }
+        
+        .chat-text {
+            color: #e0e0e0;
+            font-size: 14px;
+        }
+        
+        .chat-input {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .chat-input input {
+            flex: 1;
+            padding: 10px;
+            background: #1a1a1a;
+            border: 1px solid #404040;
+            border-radius: 4px;
+            color: #e0e0e0;
+        }
+        
+        .help-text {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            border-left: 3px solid #0066cc;
+        }
+        
+        .help-text h3 {
+            margin-bottom: 10px;
+            color: #0066cc;
+        }
+        
+        .help-text p {
+            margin-bottom: 8px;
+            color: #b0b0b0;
+            font-size: 14px;
+        }
+        
+        .help-text kbd {
+            background: #404040;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: #808080;
+            padding: 40px 20px;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .fps-selector {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .fps-selector label {
+            color: #b0b0b0;
+        }
+        
+        .fps-selector select {
+            padding: 6px;
+            background: #1a1a1a;
+            border: 1px solid #404040;
+            border-radius: 4px;
+            color: #e0e0e0;
+        }
+        
+        .success-message {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: #00aa00;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            z-index: 1000;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .error-message {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: #cc3300;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            z-index: 1000;
+        }
+        
+        .session-info {
+            background: #1a1a1a;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .session-info h3 {
+            color: #0066cc;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .session-info p {
+            color: #b0b0b0;
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+        
+        .session-id {
+            background: #2d2d2d;
+            padding: 8px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 12px;
+            word-break: break-all;
+            color: #fff;
+        }
+        
+        .recent-sessions {
+            margin-top: 20px;
+            padding: 15px;
+            background: #1a1a1a;
+            border-radius: 4px;
+            border: 1px solid #404040;
+        }
+        
+        .recent-sessions h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            color: #e0e0e0;
+        }
+        
+        .recent-session-item {
+            padding: 10px;
+            background: #2d2d2d;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .recent-session-item:hover {
+            background: #404040;
+        }
+        
+        .recent-session-name {
+            font-weight: bold;
+            color: #e0e0e0;
+            margin-bottom: 4px;
+        }
+        
+        .recent-session-id {
+            font-size: 11px;
+            color: #808080;
+            font-family: monospace;
+        }
+        
+        .music-metadata {
+            transition: all 0.3s;
+        }
+        
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .modal-content {
+            background: #2d2d2d;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+        
+        .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #404040;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            color: #b0b0b0;
+            font-size: 28px;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+        
+        .modal-close:hover {
+            color: #fff;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-body .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .modal-body .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            color: #b0b0b0;
+            font-size: 13px;
+        }
+        
+        .modal-body .form-group input,
+        .modal-body .form-group textarea {
+            width: 100%;
+            padding: 8px;
+            background: #1a1a1a;
+            border: 1px solid #404040;
+            border-radius: 4px;
+            color: #e0e0e0;
+            font-size: 13px;
+            font-family: inherit;
+        }
+        
+        .modal-body .form-group textarea {
+            resize: vertical;
+        }
+        
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #404040;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+    </style>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>FilmSpotter</h1>
+            </div>
+            <div class="header-info">
+                <span class="user-badge" id="userBadge">User</span>
+                <span id="sessionNameDisplay" style="color: #b0b0b0; font-size: 12px; margin: 0 10px;">Session</span>
+                <button class="btn btn-secondary" onclick="app.copySessionLink()" style="padding: 4px 8px; font-size: 11px;">📋 Copy Link</button>
+                <span id="activeUsers" style="color: #b0b0b0; font-size: 12px; cursor: pointer; margin-left: 10px;" title="Click to manage participants" onclick="app.toggleParticipantsPanel()">👥 0 users</span>
+                <span id="connectionStatus">●</span>
+            </div>
+            <div class="header-controls">
+                <label style="display: flex; align-items: center; gap: 6px; color: #b0b0b0; font-size: 12px; margin-right: 10px;">
+                    <input type="checkbox" id="exportFiltered" checked>
+                    Export filtered only
+                </label>
+                <button class="btn btn-secondary" onclick="app.exportData()">Export Events</button>
+                <button class="btn btn-danger" onclick="app.clearSession()">Clear Session</button>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="video-section">
+                <div id="videoSetup" class="video-setup">
+                    <h2>Setup FilmSpotter Session</h2>
+                    
+                    <div class="form-group">
+                        <label>Your Name</label>
+                        <input type="text" id="userNameInput" placeholder="Enter your name" />
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Session Name</label>
+                        <input type="text" id="sessionNameInput" placeholder="e.g., The Last Stand - Music Spotting" />
+                        <p style="font-size: 11px; color: #808080; margin-top: 4px;">Give this session a memorable name so you and your team can find it easily</p>
+                    </div>
+                    
+                    <div class="session-info">
+                        <h3>📋 Session ID</h3>
+                        <p>This will be generated from your session name. Share the link below with your team:</p>
+                        <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
+                            <div class="session-id" id="sessionIdDisplay" style="flex: 1;">Enter session name above</div>
+                            <button class="btn btn-secondary" onclick="app.copySessionLink()" id="copyLinkBtn" style="display: none;">📋 Copy Link</button>
+                        </div>
+                    </div>
+                    
+                    <div id="recentSessions" class="recent-sessions hidden">
+                        <h3>Recent Sessions</h3>
+                        <div id="recentSessionsList"></div>
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="display: inline-flex !important; align-items: center; gap: 8px; cursor: pointer; color: #e0e0e0; font-size: 13px; margin-bottom: 0 !important;">
+                            <input type="checkbox" id="enablePassword" onchange="app.togglePasswordField()" style="width: auto; margin: 0;">
+                            <span>Require password to join (optional)</span>
+                        </label>
+                        <input type="password" id="sessionPassword" placeholder="Enter session password" class="hidden" style="margin-top: 8px; width: 100%;">
+                    </div>
+                    
+                    <div class="form-group" style="margin-bottom: 15px;">
+                        <label style="display: inline-flex !important; align-items: center; gap: 8px; cursor: pointer; color: #e0e0e0; font-size: 13px; margin-bottom: 0 !important;">
+                            <input type="checkbox" id="allowAllControl" checked style="width: auto; margin: 0;">
+                            <span>Allow all participants to control and mark</span>
+                        </label>
+                        <p style="font-size: 11px; color: #808080; margin: 4px 0 0 26px;">If unchecked, only host and co-hosts can control the session</p>
+                    </div>
+                    
+                    <div class="help-text">
+                        <h3>Getting Started</h3>
+                        
+                        <p><strong>🎯 RECOMMENDED: Dropbox (Best for Frame-by-Frame)</strong></p>
+                        <p>1. Upload your video to Dropbox</p>
+                        <p>2. Right-click → Share → Copy link</p>
+                        <p>3. Paste the ENTIRE link here (tool will convert it automatically)</p>
+                        <p>4. Click Load Video</p>
+                        <p><em>Example: https://www.dropbox.com/s/abc123/video.mp4?dl=0</em></p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Video URL (Dropbox recommended)</label>
+                        <input type="text" id="videoUrlInput" placeholder="https://www.dropbox.com/s/..." />
+                    </div>
+                    <div class="form-group">
+                        <label>Project Name</label>
+                        <input type="text" id="projectNameInput" placeholder="My Film Project" />
+                    </div>
+                    <button class="btn" onclick="app.loadVideo()">Load Video</button>
+                </div>
+                
+                <div id="videoPlayer" class="hidden">
+                    <div class="video-container">
+                        <video id="video" controls></video>
+                        <div class="timeline-markers" id="timelineMarkers"></div>
+                    </div>
+                    
+                    <div class="video-controls">
+                        <div id="videoMetadata" class="video-metadata-collapsed">
+                            <button class="metadata-toggle" onclick="app.toggleMetadata()">
+                                <span id="metadataToggleIcon">▶</span> Video Details
+                            </button>
+                            <div id="metadataContent" class="metadata-content hidden">
+                                <p id="metaResolution">Resolution: Loading...</p>
+                                <p id="metaDuration">Duration: Loading...</p>
+                                <p id="metaCodec">Codec: Loading...</p>
+                                <p id="metaColorSpace">Color Space: Loading...</p>
+                                
+                                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #404040;">
+                                    <div style="margin-bottom: 10px;">
+                                        <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #b0b0b0;">Original Frame Rate:</label>
+                                        <select id="fpsSelect" onchange="app.updateFPS()" style="padding: 6px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0; font-size: 13px;">
+                                            <option value="23.976" selected>23.976 fps</option>
+                                            <option value="24">24 fps</option>
+                                            <option value="25">25 fps</option>
+                                            <option value="29.97">29.97 fps</option>
+                                            <option value="30">30 fps</option>
+                                            <option value="50">50 fps</option>
+                                            <option value="60">60 fps</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div style="margin-bottom: 10px;">
+                                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px;">
+                                            <input type="checkbox" id="dropFrame" onchange="app.toggleDropFrame()">
+                                            <span>Drop-frame timecode</span>
+                                        </label>
+                                    </div>
+                                    
+                                    <div>
+                                        <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #b0b0b0;">Start Timecode Offset:</label>
+                                        <input type="text" id="timecodeOffset" placeholder="00:00:00:00" 
+                                               style="width: 140px; padding: 6px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0; font-family: monospace; font-size: 13px;"
+                                               onchange="app.updateTimecodeOffset()" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="timecode-display" id="timecode">00:00:00:00</div>
+                        
+                        <div class="playback-controls">
+                            <button class="btn btn-secondary" onclick="app.togglePlayPause()">⏯ Play/Pause</button>
+                            <button class="btn btn-secondary" onclick="app.skipBack()">⏪ -5s</button>
+                            <button class="btn btn-secondary" onclick="app.skipForward()">⏩ +5s</button>
+                        </div>
+                        
+                        <div class="frame-controls">
+                            <button class="frame-btn" onclick="app.previousFrame()">◀ Previous Frame</button>
+                            <button class="frame-btn" onclick="app.nextFrame()">Next Frame ▶</button>
+                        </div>
+                        
+                        <div class="help-text">
+                            <p><kbd>Space</kbd> Play/Pause | <kbd>←</kbd> Prev Frame | <kbd>→</kbd> Next Frame | <kbd>,</kbd> -5s | <kbd>.</kbd> +5s | <kbd>M</kbd> Mark</p>
+                        </div>
+                        
+                        <div class="mark-controls">
+                            <select id="departmentSelect" onchange="app.updateMarkerTypes()" style="padding: 8px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0; font-size: 13px;">
+                                <option value="global">Global</option>
+                                <option value="music">Music</option>
+                                <option value="sound">Sound</option>
+                                <option value="vfx">VFX</option>
+                                <option value="edit">Edit</option>
+                                <option value="color">Color</option>
+                            </select>
+                            <select id="markerType" style="padding: 8px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0; font-size: 13px;">
+                                <option value="hit-point">Hit Point</option>
+                            </select>
+                            <input type="text" id="hitPointNote" placeholder="Add note for marker..." />
+                            <button class="btn" onclick="app.markHitPoint()">Mark</button>
+                        </div>
+                        
+                        <div id="musicMetadata" class="music-metadata hidden">
+                            <div style="margin-top: 10px; padding: 10px; background: #1a1a1a; border-radius: 4px;">
+                                <div style="margin-bottom: 8px;">
+                                    <div style="font-size: 11px; color: #b0b0b0; margin-bottom: 4px;">Category:</div>
+                                    <label style="display: inline-block; margin-right: 15px; cursor: pointer; font-size: 12px;">
+                                        <input type="checkbox" name="category" value="source" style="margin-right: 4px;">
+                                        Source Music
+                                    </label>
+                                    <label style="display: inline-block; cursor: pointer; font-size: 12px;">
+                                        <input type="checkbox" name="category" value="underscore" style="margin-right: 4px;">
+                                        Underscore
+                                    </label>
+                                </div>
+                                <div>
+                                    <div style="font-size: 11px; color: #b0b0b0; margin-bottom: 4px;">Usage:</div>
+                                    <label style="display: inline-block; margin-right: 10px; cursor: pointer; font-size: 12px;">
+                                        <input type="checkbox" name="usage" value="bg-inst" style="margin-right: 4px;">
+                                        BG Instrumental
+                                    </label>
+                                    <label style="display: inline-block; margin-right: 10px; cursor: pointer; font-size: 12px;">
+                                        <input type="checkbox" name="usage" value="bg-vocal" style="margin-right: 4px;">
+                                        BG Vocal
+                                    </label>
+                                    <label style="display: inline-block; margin-right: 10px; cursor: pointer; font-size: 12px;">
+                                        <input type="checkbox" name="usage" value="vis-inst" style="margin-right: 4px;">
+                                        Visual Instrumental
+                                    </label>
+                                    <label style="display: inline-block; cursor: pointer; font-size: 12px;">
+                                        <input type="checkbox" name="usage" value="vis-vocal" style="margin-right: 4px;">
+                                        Visual Vocal
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar" style="display: none;">
+                <div class="sidebar-tabs">
+                    <button class="tab active" onclick="app.switchTab('hitpoints')">Events</button>
+                    <button class="tab" onclick="app.switchTab('chat')">Chat</button>
+                </div>
+                
+                <div class="events-filter">
+                    <div style="padding: 10px; background: #1a1a1a; border-radius: 4px;">
+                        <div style="font-size: 12px; color: #b0b0b0; margin-bottom: 8px;">Filter Departments:</div>
+                        <div style="display: flex; flex-direction: column; gap: 5px;">
+                            <label style="display: inline-flex; align-items: center; cursor: pointer; color: #e0e0e0; font-size: 13px;">
+                                <input type="checkbox" id="filter-global" value="global" onchange="app.handleDepartmentFilter('global')" checked style="margin: 0 6px 0 0; width: 14px; height: 14px;">
+                                <span>Global (All)</span>
+                            </label>
+                            <label style="display: inline-flex; align-items: center; cursor: pointer; color: #e0e0e0; font-size: 13px;">
+                                <input type="checkbox" id="filter-music" value="music" onchange="app.handleDepartmentFilter('music')" style="margin: 0 6px 0 0; width: 14px; height: 14px;">
+                                <span>Music</span>
+                            </label>
+                            <label style="display: inline-flex; align-items: center; cursor: pointer; color: #e0e0e0; font-size: 13px;">
+                                <input type="checkbox" id="filter-sound" value="sound" onchange="app.handleDepartmentFilter('sound')" style="margin: 0 6px 0 0; width: 14px; height: 14px;">
+                                <span>Sound</span>
+                            </label>
+                            <label style="display: inline-flex; align-items: center; cursor: pointer; color: #e0e0e0; font-size: 13px;">
+                                <input type="checkbox" id="filter-vfx" value="vfx" onchange="app.handleDepartmentFilter('vfx')" style="margin: 0 6px 0 0; width: 14px; height: 14px;">
+                                <span>VFX</span>
+                            </label>
+                            <label style="display: inline-flex; align-items: center; cursor: pointer; color: #e0e0e0; font-size: 13px;">
+                                <input type="checkbox" id="filter-edit" value="edit" onchange="app.handleDepartmentFilter('edit')" style="margin: 0 6px 0 0; width: 14px; height: 14px;">
+                                <span>Edit</span>
+                            </label>
+                            <label style="display: inline-flex; align-items: center; cursor: pointer; color: #e0e0e0; font-size: 13px;">
+                                <input type="checkbox" id="filter-color" value="color" onchange="app.handleDepartmentFilter('color')" style="margin: 0 6px 0 0; width: 14px; height: 14px;">
+                                <span>Color</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div style="padding: 10px; background: #1a1a1a; border-radius: 4px; margin-top: 10px;">
+                        <label style="display: inline-flex; align-items: center; cursor: pointer; color: #e0e0e0; font-size: 13px;">
+                            <input type="checkbox" id="followEvents" onchange="app.toggleFollowEvents()" style="margin: 0 6px 0 0; width: 14px; height: 14px;">
+                            <span>📍 Follow Events</span>
+                        </label>
+                        <div style="font-size: 11px; color: #808080; margin-top: 4px;">Auto-scroll to current event as video plays</div>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="hitpointsTab">
+                    <div id="hitPointsList"></div>
+                    <div id="emptyHitPoints" class="empty-state">
+                        <p>No events marked yet.</p>
+                        <p>Use the "Mark" button or press <kbd>M</kbd> to add one.</p>
+                    </div>
+                </div>
+                
+                <div class="tab-content hidden" id="chatTab">
+                    <div class="chat-messages" id="chatMessages"></div>
+                    <div class="chat-input">
+                        <input type="text" id="chatInput" placeholder="Type a message..." onkeypress="app.handleChatEnter(event)" />
+                        <button class="btn" onclick="app.sendChat()">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Edit Event Modal -->
+    <div id="editModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Edit Event</h3>
+                <button class="modal-close" onclick="app.closeEditModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Timecode:</label>
+                    <input type="text" id="editTimecode" placeholder="HH:MM:SS:FF">
+                </div>
+                <div class="form-group">
+                    <label>Note:</label>
+                    <textarea id="editNote" rows="3" placeholder="Marker note..."></textarea>
+                </div>
+                <div id="editMusicMetadata" class="hidden">
+                    <div class="form-group">
+                        <label>Category:</label>
+                        <div>
+                            <label style="display: inline-block; margin-right: 15px; cursor: pointer;">
+                                <input type="checkbox" name="edit-category" value="source" style="margin-right: 4px;">
+                                Source Music
+                            </label>
+                            <label style="display: inline-block; cursor: pointer;">
+                                <input type="checkbox" name="edit-category" value="underscore" style="margin-right: 4px;">
+                                Underscore
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Usage:</label>
+                        <div>
+                            <label style="display: inline-block; margin-right: 10px; cursor: pointer;">
+                                <input type="checkbox" name="edit-usage" value="bg-inst" style="margin-right: 4px;">
+                                BG Instrumental
+                            </label>
+                            <label style="display: inline-block; margin-right: 10px; cursor: pointer;">
+                                <input type="checkbox" name="edit-usage" value="bg-vocal" style="margin-right: 4px;">
+                                BG Vocal
+                            </label>
+                            <label style="display: inline-block; margin-right: 10px; cursor: pointer;">
+                                <input type="checkbox" name="edit-usage" value="vis-inst" style="margin-right: 4px;">
+                                Visual Instrumental
+                            </label>
+                            <label style="display: inline-block; cursor: pointer;">
+                                <input type="checkbox" name="edit-usage" value="vis-vocal" style="margin-right: 4px;">
+                                Visual Vocal
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="app.closeEditModal()">Cancel</button>
+                <button class="btn" onclick="app.saveEditedEvent()">Save</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Participants Panel -->
+    <div id="participantsPanel" class="modal hidden">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>👥 Participants</h3>
+                <button class="modal-close" onclick="app.toggleParticipantsPanel()">×</button>
+            </div>
+            <div class="modal-body" id="participantsList" style="max-height: 400px; overflow-y: auto;">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Export Format Selection Modal -->
+    <div id="exportModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>Select Export Formats</h3>
+                <button class="close-btn" onclick="app.closeExportModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 15px; color: #b0b0b0;">Choose which formats to export:</p>
+                <label style="display: flex; align-items: center; margin-bottom: 10px; cursor: pointer;">
+                    <input type="checkbox" id="exportCSV" checked style="margin-right: 8px;">
+                    <span>CSV (Spreadsheet)</span>
+                </label>
+                <label style="display: flex; align-items: center; margin-bottom: 10px; cursor: pointer;">
+                    <input type="checkbox" id="exportJSON" checked style="margin-right: 8px;">
+                    <span>JSON (Data)</span>
+                </label>
+                <label style="display: flex; align-items: center; margin-bottom: 10px; cursor: pointer;">
+                    <input type="checkbox" id="exportEDL" checked style="margin-right: 8px;">
+                    <span>EDL (Edit Decision List)</span>
+                </label>
+                <label style="display: flex; align-items: center; margin-bottom: 15px; cursor: pointer;">
+                    <input type="checkbox" id="exportMIDI" checked style="margin-right: 8px;">
+                    <span>MIDI (DAW Markers)</span>
+                </label>
+                <button class="btn" onclick="app.confirmExport()" style="width: 100%;">Export Selected</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const app = {
+            fps: 23.976,
+            video: null,
+            sessionId: null,
+            userName: 'Anonymous',
+            updateInterval: null,
+            detectedFPS: null,
+            activeUsers: [],
+            timecodeOffset: 0, // offset in seconds
+            useDropFrame: false, // drop-frame timecode mode
+            currentDepartment: 'music', // Current department for marking
+            eventsFilter: 'global', // Current filter for events display
+            activeFilters: ['global'], // Array of active department filters
+            editingEventId: null, // ID of event being edited
+            isHost: false, // Is current user the host
+            sessionPassword: null, // Session password if set
+            allowAllControl: true, // Whether all users can control
+            userRole: 'viewer', // current user's role: 'host', 'co-host', 'viewer'
+            currentHighlightedEventId: null, // Track currently highlighted event to prevent flashing
+            lastHighlightUpdate: 0, // Timestamp of last highlight update for throttling
+            followEvents: false, // Whether to auto-scroll to current event
+            
+            // Firebase configuration
+            firebaseConfig: {
+                apiKey: "AIzaSyDRuHGzq2Rsno5wN_WAAbRARQy1lfMZq9M",
+                authDomain: "filmspotter.firebaseapp.com",
+                projectId: "filmspotter",
+                storageBucket: "filmspotter.firebasestorage.app",
+                messagingSenderId: "357426669445",
+                appId: "1:357426669445:web:2bfc11f41263f93b0946ec"
+            },
+            db: null, // Firestore database reference
+            unsubscribeListeners: [], // Store listener unsubscribe functions
+            participantHeartbeat: null, // Interval for participant heartbeat
+            myParticipantId: null, // This user's participant ID
+            lastParticipantCount: -1, // Track last count (-1 means never set, forces first update)
+            participantUpdateCount: 0, // Count how many times we've updated
+            
+            // Department configuration
+            departments: {
+                music: {
+                    name: 'Music',
+                    color: '#ffcc00', // Yellow/Gold
+                    markers: [
+                        { value: 'music-in', label: 'Music In', color: '#ffcc00' },
+                        { value: 'music-out', label: 'Music Out', color: '#ff9900' },
+                        { value: 'hit-point', label: 'Hit Point', color: '#ffeb3b' },
+                        { value: 'song-in', label: 'Song In', color: '#ffd700' },
+                        { value: 'song-out', label: 'Song Out', color: '#ffb300' },
+                        { value: 'audio-ref', label: 'Audio Reference', color: '#ffe066' }
+                    ]
+                },
+                sound: {
+                    name: 'Sound',
+                    color: '#00ccff', // Blue/Cyan
+                    markers: [
+                        { value: 'music-in', label: 'Music In', color: '#00ccff' },
+                        { value: 'music-out', label: 'Music Out', color: '#0099cc' },
+                        { value: 'adr', label: 'ADR', color: '#33d4ff' },
+                        { value: 'walla', label: 'Walla', color: '#66ddff' },
+                        { value: 'backgrounds', label: 'Backgrounds', color: '#00b8e6' },
+                        { value: 'foley', label: 'Foley', color: '#00a3d1' },
+                        { value: 'clean-up', label: 'Clean Up', color: '#008fb8' }
+                    ]
+                },
+                vfx: {
+                    name: 'VFX',
+                    color: '#9933ff', // Purple/Magenta
+                    markers: [
+                        { value: 'shot', label: 'Shot', color: '#9933ff' }
+                    ]
+                },
+                edit: {
+                    name: 'Edit',
+                    color: '#00cc00', // Green
+                    markers: [
+                        { value: 'shot', label: 'Shot', color: '#00cc00' }
+                    ]
+                },
+                color: {
+                    name: 'Color',
+                    color: '#ff6600', // Orange
+                    markers: [
+                        { value: 'note', label: 'Note', color: '#ff6600' }
+                    ]
+                }
+            },
+            
+            // Simple in-memory storage for this demo
+            // In production, this would use Firebase or another real-time database
+            storage: {
+                hitPoints: [],
+                chatMessages: []
+            },
+            
+            async init() {
+                this.video = document.getElementById('video');
+                
+                // Initialize Firebase
+                try {
+                    firebase.initializeApp(this.firebaseConfig);
+                    this.db = firebase.firestore();
+                    console.log('✅ Firebase initialized successfully');
+                    this.showMessage('✓ Connected to Firebase - real-time sync enabled');
+                } catch (error) {
+                    console.error('❌ Firebase initialization failed:', error);
+                    this.showMessage('⚠️ Firebase connection failed - using local storage only', true);
+                }
+                
+                // Check URL for session parameter
+                const urlParams = new URLSearchParams(window.location.search);
+                const urlSessionId = urlParams.get('session');
+                
+                if (urlSessionId) {
+                    // Join session from URL
+                    this.sessionId = urlSessionId;
+                    localStorage.setItem('film-spotter-session-id', urlSessionId);
+                } else {
+                    // Get or create session
+                    this.sessionId = this.getOrCreateSessionId();
+                }
+                
+                // Set up Firebase real-time listeners NOW (with sessionId set)
+                if (this.db && this.sessionId) {
+                    this.setupFirebaseListeners();
+                }
+                
+                // THEN load initial session data from Firebase
+                if (urlSessionId && this.db) {
+                    await this.loadSessionFromFirebase(urlSessionId);
+                }
+                
+                document.getElementById('sessionIdDisplay').textContent = this.sessionId;
+                
+                // Show recent sessions on setup screen
+                this.showRecentSessions();
+                
+                // Add session name input listener
+                document.getElementById('sessionNameInput').addEventListener('input', (e) => {
+                    this.updateSessionIdPreview(e.target.value);
+                });
+                
+                // Initialize department selector to Global by default
+                document.getElementById('departmentSelect').value = 'global';
+                this.activeFilters = ['global'];
+                this.updateMarkerTypes();
+                
+                this.setupEventListeners();
+                await this.loadUserName();
+                await this.loadSession();
+                this.startUpdateLoop();
+            },
+            
+            getOrCreateSessionId() {
+                let sessionId = localStorage.getItem('film-spotter-session-id');
+                if (!sessionId) {
+                    sessionId = 'session-' + Math.random().toString(36).substr(2, 9);
+                    localStorage.setItem('film-spotter-session-id', sessionId);
+                }
+                return sessionId;
+            },
+            
+            updateSessionIdPreview(sessionName) {
+                const sessionIdInput = document.getElementById('sessionIdDisplay');
+                const copyBtn = document.getElementById('copyLinkBtn');
+                
+                if (sessionName.trim()) {
+                    // Convert session name to URL-friendly ID
+                    const sessionId = sessionName.toLowerCase()
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/^-+|-+$/g, '');
+                    
+                    sessionIdInput.textContent = sessionId || 'Enter a valid session name';
+                    copyBtn.style.display = sessionId ? 'inline-block' : 'none';
+                    // DON'T set this.sessionId here - only preview it!
+                    // It will be set properly in loadVideo() when listeners are updated
+                } else {
+                    sessionIdInput.textContent = 'Enter session name above';
+                    copyBtn.style.display = 'none';
+                }
+            },
+            
+            copySessionLink() {
+                // Check if user has entered a session name but hasn't loaded video yet
+                const sessionNameInput = document.getElementById('sessionNameInput');
+                const sessionName = sessionNameInput ? sessionNameInput.value.trim() : '';
+                
+                let sessionIdToUse = this.sessionId;
+                
+                if (sessionName) {
+                    // Convert session name to ID (same logic as loadVideo)
+                    const convertedId = sessionName.toLowerCase()
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/^-+|-+$/g, '');
+                    
+                    if (convertedId) {
+                        sessionIdToUse = convertedId;
+                        console.log(`📋 Using session name "${sessionName}" → ID: ${convertedId}`);
+                    }
+                }
+                
+                const baseUrl = window.location.href.split('?')[0];
+                const sessionLink = `${baseUrl}?session=${sessionIdToUse}`;
+                
+                console.log(`📋 Copying link for session: ${sessionIdToUse}`);
+                console.log(`📋 Full link: ${sessionLink}`);
+                
+                // Copy to clipboard
+                navigator.clipboard.writeText(sessionLink).then(() => {
+                    // Check if this is a local file with version number
+                    if (baseUrl.includes('file://') && (baseUrl.match(/_\d+\.html/) || baseUrl.match(/\(\d+\)\.html/))) {
+                        this.showMessage(`⚠️ Link copied, but filename has version number. Guest must have same file!`);
+                    } else {
+                        this.showMessage(`✓ Session link copied: ${sessionIdToUse}`);
+                    }
+                }).catch(() => {
+                    // Fallback for older browsers
+                    prompt('Copy this link to share:', sessionLink);
+                });
+            },
+            
+            showRecentSessions() {
+                const recentSessionsDiv = document.getElementById('recentSessions');
+                const listDiv = document.getElementById('recentSessionsList');
+                
+                // Get recent sessions from localStorage
+                const recentSessions = JSON.parse(localStorage.getItem('film-spotter-recent-sessions') || '[]');
+                
+                if (recentSessions.length > 0) {
+                    recentSessionsDiv.classList.remove('hidden');
+                    listDiv.innerHTML = recentSessions.slice(0, 5).map(session => `
+                        <div class="recent-session-item" onclick="app.joinRecentSession('${session.id}')">
+                            <div class="recent-session-name">${session.name || 'Unnamed Session'}</div>
+                            <div class="recent-session-id">${session.id}</div>
+                        </div>
+                    `).join('');
+                } else {
+                    recentSessionsDiv.classList.add('hidden');
+                }
+            },
+            
+            joinRecentSession(sessionId) {
+                // Set session ID
+                this.sessionId = sessionId;
+                localStorage.setItem('film-spotter-session-id', sessionId);
+                
+                // Update display
+                document.getElementById('sessionIdDisplay').textContent = sessionId;
+                
+                // Set up listeners for this session
+                if (this.db && this.sessionId) {
+                    // Clear any existing listeners first
+                    this.unsubscribeListeners.forEach(unsub => unsub());
+                    this.unsubscribeListeners = [];
+                    
+                    // Set up new listeners for this session
+                    this.setupFirebaseListeners();
+                }
+                
+                // Load session data from Firebase
+                if (this.db) {
+                    this.loadSessionFromFirebase(sessionId);
+                }
+                
+                this.showMessage(`✓ Switched to session: ${sessionId}`);
+            },
+            
+            saveSessionToRecents(sessionId, sessionName) {
+                const recentSessions = JSON.parse(localStorage.getItem('film-spotter-recent-sessions') || '[]');
+                
+                // Remove if already exists
+                const filtered = recentSessions.filter(s => s.id !== sessionId);
+                
+                // Add to front
+                filtered.unshift({
+                    id: sessionId,
+                    name: sessionName,
+                    timestamp: Date.now()
+                });
+                
+                // Keep only last 10
+                const trimmed = filtered.slice(0, 10);
+                
+                localStorage.setItem('film-spotter-recent-sessions', JSON.stringify(trimmed));
+            },
+            
+            async loadUserName() {
+                const savedName = localStorage.getItem('film-spotter-username');
+                if (savedName) {
+                    this.userName = savedName;
+                    document.getElementById('userNameInput').value = savedName;
+                    document.getElementById('userBadge').textContent = savedName;
+                }
+            },
+            
+            setupEventListeners() {
+                // Save username when it changes
+                document.getElementById('userNameInput').addEventListener('change', (e) => {
+                    this.userName = e.target.value.trim() || 'Anonymous';
+                    localStorage.setItem('film-spotter-username', this.userName);
+                    document.getElementById('userBadge').textContent = this.userName;
+                });
+                
+                // Make category checkboxes behave like radio buttons
+                document.querySelectorAll('input[name="category"]').forEach(checkbox => {
+                    checkbox.addEventListener('change', (e) => {
+                        if (e.target.checked) {
+                            document.querySelectorAll('input[name="category"]').forEach(cb => {
+                                if (cb !== e.target) cb.checked = false;
+                            });
+                        }
+                    });
+                });
+                
+                // Make usage checkboxes behave like radio buttons
+                document.querySelectorAll('input[name="usage"]').forEach(checkbox => {
+                    checkbox.addEventListener('change', (e) => {
+                        if (e.target.checked) {
+                            document.querySelectorAll('input[name="usage"]').forEach(cb => {
+                                if (cb !== e.target) cb.checked = false;
+                            });
+                        }
+                    });
+                });
+                
+                // Make edit modal category checkboxes behave like radio buttons
+                document.querySelectorAll('input[name="edit-category"]').forEach(checkbox => {
+                    checkbox.addEventListener('change', (e) => {
+                        if (e.target.checked) {
+                            document.querySelectorAll('input[name="edit-category"]').forEach(cb => {
+                                if (cb !== e.target) cb.checked = false;
+                            });
+                        }
+                    });
+                });
+                
+                // Make edit modal usage checkboxes behave like radio buttons
+                document.querySelectorAll('input[name="edit-usage"]').forEach(checkbox => {
+                    checkbox.addEventListener('change', (e) => {
+                        if (e.target.checked) {
+                            document.querySelectorAll('input[name="edit-usage"]').forEach(cb => {
+                                if (cb !== e.target) cb.checked = false;
+                            });
+                        }
+                    });
+                });
+                
+                // Double-click timecode to edit and jump
+                const timecodeDisplay = document.getElementById('timecode');
+                timecodeDisplay.style.cursor = 'pointer';
+                timecodeDisplay.addEventListener('click', () => {
+                    const currentTC = timecodeDisplay.textContent;
+                    timecodeDisplay.contentEditable = 'true';
+                    timecodeDisplay.style.background = '#404040';
+                    timecodeDisplay.style.outline = '2px solid #0066cc';
+                    timecodeDisplay.focus();
+                    
+                    // Select all text
+                    const range = document.createRange();
+                    range.selectNodeContents(timecodeDisplay);
+                    const sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                });
+                
+                document.getElementById('timecode').addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.jumpToFrame(e.target.textContent);
+                        e.target.contentEditable = 'false';
+                        e.target.style.background = '';
+                        e.target.style.outline = '';
+                        e.target.blur();
+                    } else if (e.key === 'Escape') {
+                        e.target.contentEditable = 'false';
+                        e.target.style.background = '';
+                        e.target.style.outline = '';
+                        e.target.blur();
+                        this.updateTimecode();
+                    }
+                });
+                
+                document.getElementById('timecode').addEventListener('blur', (e) => {
+                    e.target.contentEditable = 'false';
+                    e.target.style.background = '';
+                    e.target.style.outline = '';
+                    this.updateTimecode();
+                });
+                
+                // Video time update
+                this.video.addEventListener('timeupdate', () => {
+                    this.updateTimecode();
+                    this.updateTimelineMarkers();
+                    this.highlightCurrentEvent();
+                });
+                
+                // Keyboard shortcuts
+                document.addEventListener('keydown', (e) => {
+                    // Don't trigger shortcuts if user is typing in an input field
+                    const isTyping = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA';
+                    
+                    if (isTyping) {
+                        return; // Let the user type normally
+                    }
+                    
+                    // Prevent default for specific keys only when not typing
+                    if (['Space', 'ArrowLeft', 'ArrowRight', 'Comma', 'Period'].includes(e.code)) {
+                        e.preventDefault();
+                    }
+                    
+                    if (e.code === 'Space') {
+                        this.togglePlayPause();
+                    } else if (e.code === 'ArrowLeft') {
+                        this.previousFrame();
+                    } else if (e.code === 'ArrowRight') {
+                        this.nextFrame();
+                    } else if (e.code === 'Comma') {
+                        // , key = jump back 5 seconds
+                        this.video.currentTime = Math.max(0, this.video.currentTime - 5);
+                        this.syncPlaybackState();
+                    } else if (e.code === 'Period') {
+                        // . key = jump forward 5 seconds
+                        this.video.currentTime = Math.min(this.video.duration, this.video.currentTime + 5);
+                        this.syncPlaybackState();
+                    } else if (e.code === 'KeyM') {
+                        this.markHitPoint();
+                    }
+                });
+            },
+            
+            async loadSession() {
+                try {
+                    const sessionData = localStorage.getItem('film-spotter-session');
+                    if (sessionData) {
+                        const session = JSON.parse(sessionData);
+                        if (session.videoUrl) {
+                            document.getElementById('videoUrlInput').value = session.videoUrl;
+                            document.getElementById('projectNameInput').value = session.projectName || '';
+                        }
+                    }
+                    
+                    // Load saved timecode offset
+                    const savedOffset = localStorage.getItem('film-spotter-offset-' + this.sessionId);
+                    if (savedOffset) {
+                        this.timecodeOffset = parseFloat(savedOffset);
+                        const time = this.timecodeOffset;
+                        const hours = Math.floor(time / 3600);
+                        const minutes = Math.floor((time % 3600) / 60);
+                        const seconds = Math.floor(time % 60);
+                        const frames = Math.round((time % 1) * this.fps);
+                        const tc = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}:${String(frames).padStart(2, '0')}`;
+                        document.getElementById('timecodeOffset').value = tc;
+                    }
+                } catch (error) {
+                    console.log('No existing session found');
+                }
+                
+                // Load hit points and chat
+                this.loadStoredData();
+                await this.refreshHitPoints();
+                await this.refreshChat();
+            },
+            
+            loadStoredData() {
+                try {
+                    const hitPoints = localStorage.getItem('film-spotter-hitpoints-' + this.sessionId);
+                    if (hitPoints) {
+                        this.storage.hitPoints = JSON.parse(hitPoints);
+                    }
+                    
+                    const chat = localStorage.getItem('film-spotter-chat-' + this.sessionId);
+                    if (chat) {
+                        this.storage.chatMessages = JSON.parse(chat);
+                    }
+                } catch (error) {
+                    console.log('Error loading stored data');
+                }
+            },
+            
+            async saveMarkerToFirebase(marker) {
+                if (!this.db || !this.sessionId) {
+                    console.warn('⚠️ Firebase not initialized or no session ID');
+                    console.warn('   this.db:', this.db ? 'EXISTS' : 'NULL');
+                    console.warn('   this.sessionId:', this.sessionId);
+                    return;
+                }
+                
+                console.log(`💾 Attempting to save marker to Firebase...`);
+                console.log(`   Session: ${this.sessionId}`);
+                console.log(`   Marker ID: ${marker.id}`);
+                console.log(`   User: ${this.userName}`);
+                
+                try {
+                    const path = `sessions/${this.sessionId}/markers/${marker.id}`;
+                    console.log(`   Path: ${path}`);
+                    
+                    // Save marker as individual document in subcollection
+                    await this.db.collection('sessions').doc(this.sessionId)
+                        .collection('markers').doc(marker.id).set(marker);
+                    
+                    console.log(`✅ Saved marker ${marker.id} to Firebase by ${this.userName}`);
+                } catch (error) {
+                    console.error('❌ Error saving marker to Firebase:', error);
+                    console.error('   Error code:', error.code);
+                    console.error('   Error message:', error.message);
+                    this.showMessage(`❌ Failed to save marker: ${error.message}`, true);
+                    throw error; // Re-throw so caller knows it failed
+                }
+            },
+            
+            async saveChatToFirebase(message) {
+                if (!this.db || !this.sessionId) {
+                    console.warn('⚠️ Firebase not initialized or no session ID');
+                    console.warn('   this.db:', this.db ? 'EXISTS' : 'NULL');
+                    console.warn('   this.sessionId:', this.sessionId);
+                    return;
+                }
+                
+                console.log(`💬 Attempting to save chat to Firebase...`);
+                console.log(`   Session: ${this.sessionId}`);
+                console.log(`   Message ID: ${message.id}`);
+                console.log(`   User: ${this.userName}`);
+                
+                try {
+                    const path = `sessions/${this.sessionId}/chat/${message.id}`;
+                    console.log(`   Path: ${path}`);
+                    
+                    // Save chat message as individual document in subcollection
+                    await this.db.collection('sessions').doc(this.sessionId)
+                        .collection('chat').doc(message.id).set(message);
+                    
+                    console.log(`✅ Saved chat message ${message.id} to Firebase by ${this.userName}`);
+                } catch (error) {
+                    console.error('❌ Error saving chat to Firebase:', error);
+                    console.error('   Error code:', error.code);
+                    console.error('   Error message:', error.message);
+                    this.showMessage(`❌ Failed to send message: ${error.message}`, true);
+                    throw error;
+                }
+            },
+            
+            saveStoredData() {
+                try {
+                    // Save to localStorage as backup
+                    localStorage.setItem('film-spotter-hitpoints-' + this.sessionId, JSON.stringify(this.storage.hitPoints));
+                    localStorage.setItem('film-spotter-chat-' + this.sessionId, JSON.stringify(this.storage.chatMessages));
+                    
+                    // Sync to Firebase if connected
+                    if (this.db) {
+                        this.syncToFirebase();
+                    }
+                } catch (error) {
+                    console.error('Error saving data:', error);
+                }
+            },
+            
+            async syncToFirebase() {
+                if (!this.db || !this.sessionId) return;
+                
+                try {
+                    const sessionRef = this.db.collection('sessions').doc(this.sessionId);
+                    
+                    // Only sync playback state and offset at session level
+                    // Markers and chat are handled via subcollections
+                    await sessionRef.set({
+                        playbackState: {
+                            isPlaying: !this.video.paused,
+                            currentTime: this.video.currentTime,
+                            updatedBy: this.userName,
+                            timestamp: Date.now()
+                        },
+                        timecodeOffset: this.timecodeOffset,
+                        lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                    
+                    console.log(`✅ Synced playback state to Firebase`);
+                } catch (error) {
+                    console.error('❌ Firebase sync error:', error);
+                }
+            },
+            
+            setupFirebaseListeners() {
+                if (!this.db || !this.sessionId) return;
+                
+                console.log(`🔥 Setting up Firebase listeners for session: ${this.sessionId}, user: ${this.userName}`);
+                
+                const sessionRef = this.db.collection('sessions').doc(this.sessionId);
+                
+                // Listen for MARKERS subcollection changes
+                const markersUnsubscribe = sessionRef.collection('markers').onSnapshot((snapshot) => {
+                    console.log(`📍 Markers snapshot: ${snapshot.docChanges().length} changes`);
+                    snapshot.docChanges().forEach((change) => {
+                        const marker = change.doc.data();
+                        console.log(`Marker change type: ${change.type}, marker:`, marker);
+                        
+                        if (change.type === 'added') {
+                            // Check if we already have this marker
+                            const exists = this.storage.hitPoints.find(hp => hp.id === marker.id);
+                            if (!exists) {
+                                console.log(`➕ New marker added: ${marker.id} by ${marker.user} at ${marker.timecode}`);
+                                this.storage.hitPoints.push(marker);
+                                this.storage.hitPoints.sort((a, b) => a.time - b.time);
+                                localStorage.setItem('film-spotter-hitpoints-' + this.sessionId, JSON.stringify(this.storage.hitPoints));
+                                this.refreshHitPoints();
+                            } else {
+                                console.log(`➕ Marker ${marker.id} already exists, skipping`);
+                            }
+                        } else if (change.type === 'modified') {
+                            // Update existing marker
+                            const index = this.storage.hitPoints.findIndex(hp => hp.id === marker.id);
+                            if (index !== -1) {
+                                console.log(`✏️ Marker updated: ${marker.id}`);
+                                this.storage.hitPoints[index] = marker;
+                                localStorage.setItem('film-spotter-hitpoints-' + this.sessionId, JSON.stringify(this.storage.hitPoints));
+                                this.refreshHitPoints();
+                            }
+                        } else if (change.type === 'removed') {
+                            // Remove marker
+                            console.log(`🗑️ Marker removed: ${marker.id}`);
+                            this.storage.hitPoints = this.storage.hitPoints.filter(hp => hp.id !== marker.id);
+                            localStorage.setItem('film-spotter-hitpoints-' + this.sessionId, JSON.stringify(this.storage.hitPoints));
+                            this.refreshHitPoints();
+                        }
+                    });
+                }, (error) => {
+                    console.error('❌ Markers listener error:', error);
+                });
+                
+                // Listen for CHAT subcollection changes
+                const chatUnsubscribe = sessionRef.collection('chat').onSnapshot((snapshot) => {
+                    console.log(`💬 Chat snapshot: ${snapshot.docChanges().length} changes`);
+                    snapshot.docChanges().forEach((change) => {
+                        const message = change.doc.data();
+                        console.log(`Chat change type: ${change.type}, message:`, message);
+                        
+                        if (change.type === 'added') {
+                            const exists = this.storage.chatMessages.find(msg => msg.id === message.id);
+                            if (!exists) {
+                                console.log(`💬 New chat message: ${message.id} by ${message.user}: "${message.text}"`);
+                                this.storage.chatMessages.push(message);
+                                this.storage.chatMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                                localStorage.setItem('film-spotter-chat-' + this.sessionId, JSON.stringify(this.storage.chatMessages));
+                                this.refreshChat();
+                            } else {
+                                console.log(`💬 Chat message ${message.id} already exists, skipping`);
+                            }
+                        }
+                    });
+                }, (error) => {
+                    console.error('❌ Chat listener error:', error);
+                });
+                
+                // Listen for SESSION-LEVEL updates (playback, offset, etc.)
+                const sessionUnsubscribe = sessionRef.onSnapshot((doc) => {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        
+                        // Sync playback state (only if video is loaded)
+                        if (data.playbackState && data.playbackState.updatedBy !== this.userName && this.video && this.video.readyState >= 2) {
+                            const timeDiff = Math.abs(this.video.currentTime - data.playbackState.currentTime);
+                            
+                            // Always sync position when paused (critical for frame-accurate stops and nudges)
+                            if (!data.playbackState.isPlaying && this.video.paused) {
+                                // Both are paused - sync position even for tiny frame nudges
+                                if (timeDiff > 0.001) { // Any movement at all
+                                    this.video.currentTime = data.playbackState.currentTime;
+                                    console.log(`🔄 Synced POSITION at ${data.playbackState.currentTime.toFixed(3)}s from ${data.playbackState.updatedBy}`);
+                                }
+                            }
+                            // Pause if remote is paused but we're playing
+                            else if (!data.playbackState.isPlaying && !this.video.paused) {
+                                const isBehind = this.video.currentTime < data.playbackState.currentTime;
+                                const catchUpThreshold = 0.5; // If more than 0.5s behind, catch up first
+                                
+                                if (isBehind && timeDiff > catchUpThreshold) {
+                                    // We're behind - keep playing to catch up
+                                    console.log(`⏩ Catching up: ${timeDiff.toFixed(2)}s behind target ${data.playbackState.currentTime.toFixed(3)}s`);
+                                    
+                                    // Set up a check to pause when caught up
+                                    const checkCatchUp = setInterval(() => {
+                                        const currentDiff = data.playbackState.currentTime - this.video.currentTime;
+                                        if (currentDiff <= 0.1 || this.video.currentTime >= data.playbackState.currentTime) {
+                                            // Caught up! Now pause
+                                            clearInterval(checkCatchUp);
+                                            this.video.pause();
+                                            this.video.currentTime = data.playbackState.currentTime;
+                                            console.log(`✓ Caught up and paused at ${data.playbackState.currentTime.toFixed(3)}s`);
+                                        }
+                                    }, 100);
+                                    
+                                    // Safety: force pause after 5 seconds even if not caught up
+                                    setTimeout(() => {
+                                        clearInterval(checkCatchUp);
+                                        if (!this.video.paused) {
+                                            this.video.pause();
+                                            this.video.currentTime = data.playbackState.currentTime;
+                                            console.log(`⏸ Forced pause (timeout) at ${data.playbackState.currentTime.toFixed(3)}s`);
+                                        }
+                                    }, 5000);
+                                } else {
+                                    // Close enough or ahead - pause immediately
+                                    this.video.pause();
+                                    this.video.currentTime = data.playbackState.currentTime;
+                                    console.log(`🔄 Synced STOP at ${data.playbackState.currentTime.toFixed(3)}s from ${data.playbackState.updatedBy}`);
+                                }
+                            } 
+                            // Sync play state
+                            else if (data.playbackState.isPlaying && this.video.paused) {
+                                this.video.currentTime = data.playbackState.currentTime;
+                                this.video.play().catch(e => console.log('Play blocked:', e));
+                                console.log(`🔄 Synced PLAY from ${data.playbackState.currentTime.toFixed(3)}s`);
+                            }
+                            // Sync seek while playing (only if difference > 0.5s to avoid jitter)
+                            else if (data.playbackState.isPlaying && !this.video.paused && timeDiff > 0.5) {
+                                this.video.currentTime = data.playbackState.currentTime;
+                                console.log(`🔄 Synced SEEK to ${data.playbackState.currentTime.toFixed(3)}s`);
+                            }
+                        }
+                        
+                        // Sync timecode offset
+                        if (data.timecodeOffset !== undefined && data.timecodeOffset !== this.timecodeOffset) {
+                            this.timecodeOffset = data.timecodeOffset;
+                            
+                            // Update the offset input field
+                            const offsetSeconds = data.timecodeOffset;
+                            const hours = Math.floor(offsetSeconds / 3600);
+                            const minutes = Math.floor((offsetSeconds % 3600) / 60);
+                            const seconds = Math.floor(offsetSeconds % 60);
+                            const frames = Math.round((offsetSeconds % 1) * this.fps);
+                            const offsetTC = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}:${String(frames).padStart(2, '0')}`;
+                            
+                            document.getElementById('timecodeOffset').value = offsetTC;
+                            this.updateTimecode();
+                            console.log('🔄 Synced timecode offset from Firebase');
+                        }
+                    }
+                }, (error) => {
+                    console.error('❌ Session listener error:', error);
+                });
+                
+                this.unsubscribeListeners.push(markersUnsubscribe, chatUnsubscribe, sessionUnsubscribe);
+                
+                // Listen for PARTICIPANTS changes
+                const participantsUnsubscribe = sessionRef.collection('participants').onSnapshot((snapshot) => {
+                    const participants = [];
+                    const now = Date.now();
+                    
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        
+                        // Handle lastSeen timestamp (now using client Date.now())
+                        const lastSeenTime = data.lastSeen || 0;
+                        
+                        // If no valid timestamp, assume active (just joined)
+                        if (lastSeenTime === 0) {
+                            console.log(`✅ ${data.name} active (just joined)`);
+                            participants.push(data);
+                            return;
+                        }
+                        
+                        const timeSinceLastSeen = now - lastSeenTime;
+                        
+                        // 30-second window (tighter now that timestamps are reliable)
+                        if (timeSinceLastSeen < 30000 && timeSinceLastSeen > -5000) {
+                            participants.push(data);
+                        } else {
+                            console.log(`⏰ ${data.name} inactive: ${Math.round(timeSinceLastSeen/1000)}s ago`);
+                        }
+                    });
+                    
+                    // Update participant count in header
+                    const activeCount = participants.length;
+                    this.participantUpdateCount++;
+                    
+                    // Force update first 3 times OR when count changes
+                    const shouldUpdate = this.participantUpdateCount <= 3 || activeCount !== this.lastParticipantCount;
+                    
+                    console.log(`Checking count: current=${activeCount}, last=${this.lastParticipantCount}, update#${this.participantUpdateCount}, will${shouldUpdate ? '' : ' NOT'} update`);
+                    
+                    if (shouldUpdate) {
+                        const text = `👥 ${activeCount} user${activeCount !== 1 ? 's' : ''}`;
+                        document.getElementById('activeUsers').textContent = text;
+                        this.lastParticipantCount = activeCount;
+                        console.log(`👥 Updated UI to: ${text}`);
+                    }
+                    
+                    // Always update participants panel (it's hidden unless opened)
+                    this.updateParticipantsPanel(participants);
+                }, (error) => {
+                    console.error('❌ Participants listener error:', error);
+                });
+                
+                this.unsubscribeListeners.push(participantsUnsubscribe);
+            },
+            
+            updateParticipantsPanel(participants) {
+                const panel = document.getElementById('participantsList');
+                if (!panel) {
+                    return;
+                }
+                
+                if (participants.length === 0) {
+                    panel.innerHTML = '<p style="color: #808080; padding: 10px;">No participants</p>';
+                    return;
+                }
+                
+                panel.innerHTML = participants.map(p => `
+                    <div style="padding: 10px; background: #2d2d2d; border-radius: 4px; margin-bottom: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-weight: bold; color: #e0e0e0;">${p.name}</div>
+                                <div style="font-size: 11px; color: #808080;">Active now</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            },
+            
+            async loadSessionFromFirebase(sessionId) {
+                if (!this.db) return;
+                
+                try {
+                    const sessionRef = this.db.collection('sessions').doc(sessionId);
+                    const doc = await sessionRef.get();
+                    
+                    if (doc.exists) {
+                        const data = doc.data();
+                        
+                        // Check if session has video data
+                        if (data.videoUrl && data.projectName) {
+                            // Auto-fill the form with session data (hide URL for security)
+                            document.getElementById('videoUrlInput').value = data.videoUrl;
+                            document.getElementById('videoUrlInput').type = 'password'; // Hide URL from guests
+                            document.getElementById('videoUrlInput').setAttribute('readonly', 'true'); // Make it readonly for guests
+                            document.getElementById('projectNameInput').value = data.projectName;
+                            document.getElementById('sessionNameInput').value = data.sessionName || sessionId;
+                            
+                            // Load timecode offset if present
+                            if (data.timecodeOffset !== undefined) {
+                                this.timecodeOffset = data.timecodeOffset;
+                                console.log(`✅ Loaded timecode offset: ${data.timecodeOffset}`);
+                            }
+                            
+                            // Load markers from subcollection
+                            const markersSnapshot = await sessionRef.collection('markers').get();
+                            if (!markersSnapshot.empty) {
+                                this.storage.hitPoints = [];
+                                markersSnapshot.forEach(doc => {
+                                    this.storage.hitPoints.push(doc.data());
+                                });
+                                this.storage.hitPoints.sort((a, b) => a.time - b.time);
+                                localStorage.setItem('film-spotter-hitpoints-' + this.sessionId, JSON.stringify(this.storage.hitPoints));
+                                console.log(`✅ Loaded ${this.storage.hitPoints.length} markers from Firebase`);
+                            }
+                            
+                            // Load chat from subcollection
+                            const chatSnapshot = await sessionRef.collection('chat').get();
+                            if (!chatSnapshot.empty) {
+                                this.storage.chatMessages = [];
+                                chatSnapshot.forEach(doc => {
+                                    this.storage.chatMessages.push(doc.data());
+                                });
+                                this.storage.chatMessages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                                localStorage.setItem('film-spotter-chat-' + this.sessionId, JSON.stringify(this.storage.chatMessages));
+                                console.log(`✅ Loaded ${this.storage.chatMessages.length} chat messages from Firebase`);
+                            }
+                            
+                            // Refresh displays immediately
+                            await this.refreshHitPoints();
+                            await this.refreshChat();
+                            
+                            this.showMessage(`✓ Joined session with ${this.storage.hitPoints.length} events`);
+                            console.log('✅ Loaded session data from Firebase');
+                        } else {
+                            console.log('ℹ️ Session exists but has no video loaded yet');
+                        }
+                    } else {
+                        console.log('ℹ️ New session - no data yet');
+                    }
+                } catch (error) {
+                    console.error('❌ Error loading session from Firebase:', error);
+                }
+            },
+            
+            async saveSession(videoUrl, projectName) {
+                const session = { videoUrl, projectName };
+                localStorage.setItem('film-spotter-session', JSON.stringify(session));
+                
+                // Save to Firebase if connected
+                if (this.db && this.sessionId) {
+                    try {
+                        const sessionName = document.getElementById('sessionNameInput').value.trim();
+                        await this.db.collection('sessions').doc(this.sessionId).set({
+                            videoUrl,
+                            projectName,
+                            sessionName: sessionName || this.sessionId,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                        }, { merge: true });
+                        
+                        console.log('✅ Session metadata saved to Firebase');
+                    } catch (error) {
+                        console.error('❌ Error saving session to Firebase:', error);
+                    }
+                }
+            },
+            
+            async loadVideo() {
+                try {
+                    const videoUrl = document.getElementById('videoUrlInput').value.trim();
+                    const projectName = document.getElementById('projectNameInput').value.trim();
+                    const userName = document.getElementById('userNameInput').value.trim();
+                    const sessionName = document.getElementById('sessionNameInput').value.trim();
+                    
+                    console.log('🎬 Loading video...', { videoUrl, projectName, userName, sessionName });
+                    
+                    if (userName) {
+                        this.userName = userName;
+                        localStorage.setItem('film-spotter-username', userName);
+                        document.getElementById('userBadge').textContent = userName;
+                    }
+                    
+                    // Update session ID from session name if provided
+                    let newSessionId = null;
+                    if (sessionName) {
+                        newSessionId = sessionName.toLowerCase()
+                            .replace(/[^a-z0-9]+/g, '-')
+                            .replace(/^-+|-+$/g, '');
+                        
+                        console.log(`🔍 Session comparison:`, {
+                            sessionName,
+                            newSessionId,
+                            currentSessionId: this.sessionId,
+                            areEqual: newSessionId === this.sessionId,
+                            willSwitch: newSessionId && newSessionId !== this.sessionId
+                        });
+                        
+                        if (newSessionId && newSessionId !== this.sessionId) {
+                            // Session ID changed - need to update listeners
+                            console.log(`📌 Switching from session ${this.sessionId} to ${newSessionId}`);
+                            
+                            // Clear old listeners
+                            this.unsubscribeListeners.forEach(unsub => unsub());
+                            this.unsubscribeListeners = [];
+                            
+                            // Update session ID
+                            this.sessionId = newSessionId;
+                            localStorage.setItem('film-spotter-session-id', newSessionId);
+                            this.saveSessionToRecents(newSessionId, sessionName);
+                            
+                            // Set up new listeners for new session
+                            if (this.db) {
+                                this.setupFirebaseListeners();
+                                console.log(`✅ Firebase listeners updated for session: ${newSessionId}`);
+                            }
+                        } else {
+                            console.log(`ℹ️ Session already set to ${this.sessionId}, no switch needed`);
+                        }
+                    }
+                    
+                    // Update header with session name AND ID
+                    const displayText = sessionName ? `${sessionName} (${this.sessionId})` : this.sessionId;
+                    document.getElementById('sessionNameDisplay').textContent = displayText;
+                    console.log(`📌 Active session: ${this.sessionId}`);
+                    
+                    if (!videoUrl) {
+                        alert('Please enter a video URL');
+                        return;
+                    }
+                
+                // Convert various video URL formats
+                let finalUrl = videoUrl;
+                let useIframe = false;
+                
+                // Handle Dropbox URLs - convert to raw content URL
+                if (videoUrl.includes('dropbox.com')) {
+                    finalUrl = videoUrl.replace('www.dropbox.com', 'dl.dropboxusercontent.com');
+                    if (finalUrl.includes('dl=0')) {
+                        finalUrl = finalUrl.replace('dl=0', 'dl=1');
+                    } else if (!finalUrl.includes('dl=1')) {
+                        finalUrl += (finalUrl.includes('?') ? '&' : '?') + 'dl=1';
+                    }
+                    if (!finalUrl.includes('raw=1')) {
+                        finalUrl += '&raw=1';
+                    }
+                    console.log('Converted Dropbox URL to:', finalUrl);
+                }
+                
+                // Handle Vimeo URLs
+                if (videoUrl.includes('vimeo.com')) {
+                    if (!videoUrl.includes('player.vimeo.com')) {
+                        const vimeoId = videoUrl.split('/').filter(part => part.match(/^\d+$/))[0];
+                        if (vimeoId) {
+                            finalUrl = `https://player.vimeo.com/video/${vimeoId}`;
+                        }
+                    }
+                    useIframe = true;
+                }
+                
+                // Handle Google Drive URLs
+                if (videoUrl.includes('drive.google.com')) {
+                    let fileId = '';
+                    if (videoUrl.includes('/file/d/')) {
+                        fileId = videoUrl.split('/file/d/')[1].split('/')[0];
+                    } else if (videoUrl.includes('id=')) {
+                        fileId = videoUrl.split('id=')[1].split('&')[0];
+                    }
+                    
+                    if (fileId) {
+                        finalUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+                        useIframe = true;
+                    } else {
+                        alert('Could not extract Google Drive file ID. Please make sure the file is shared with "Anyone with the link"');
+                        return;
+                    }
+                }
+                
+                const videoContainer = document.querySelector('.video-container');
+                
+                // For iframe-based videos (Vimeo, Google Drive)
+                if (useIframe || videoUrl.includes('iframe') || videoUrl.includes('player.vimeo.com') || videoUrl.includes('preview')) {
+                    videoContainer.innerHTML = `<iframe id="videoFrame" src="${finalUrl}" width="100%" height="500" frameborder="0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen></iframe><div class="timeline-markers" id="timelineMarkers"></div>`;
+                    alert('Video loaded! Note: Vimeo and Google Drive videos have limited controls. Frame-by-frame navigation may not work. For full features, use a Dropbox link.');
+                } else {
+                    // Direct video file
+                    this.video.src = finalUrl;
+                    this.video.load();
+                    
+                    this.video.addEventListener('loadeddata', () => {
+                        console.log('Video loaded successfully');
+                        this.showMessage('✓ Video loaded successfully! You can now use frame-by-frame controls.');
+                        this.showVideoMetadata();
+                    }, { once: true });
+                    
+                    this.video.addEventListener('error', (e) => {
+                        this.showMessage('Error loading video. Trying alternative format...', true);
+                        console.error('Video error:', e);
+                        
+                        if (videoUrl.includes('dropbox.com')) {
+                            const alternativeUrl = videoUrl.replace('www.dropbox.com', 'dl.dropboxusercontent.com').replace('dl=0', 'raw=1');
+                            console.log('Trying alternative URL:', alternativeUrl);
+                            this.video.src = alternativeUrl;
+                            this.video.load();
+                        }
+                    }, { once: true });
+                }
+                
+                document.getElementById('videoSetup').classList.add('hidden');
+                document.getElementById('videoPlayer').classList.remove('hidden');
+                document.querySelector('.sidebar').style.display = 'flex';
+                
+                // Refresh events and chat display after video loads (important for guests)
+                await this.refreshHitPoints();
+                await this.refreshChat();
+                
+                // Register this user as a participant
+                await this.registerParticipant();
+                
+                await this.saveSession(videoUrl, projectName);
+                } catch (error) {
+                    console.error('❌ Error loading video:', error);
+                    alert(`Error loading video: ${error.message}`);
+                }
+            },
+            
+            async registerParticipant() {
+                if (!this.db || !this.sessionId || !this.userName) return;
+                
+                // Use consistent ID based on username (not timestamp)
+                const participantId = `user-${this.userName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+                this.myParticipantId = participantId;
+                
+                try {
+                    const now = Date.now();
+                    await this.db.collection('sessions').doc(this.sessionId)
+                        .collection('participants').doc(participantId).set({
+                            id: participantId,
+                            name: this.userName,
+                            joinedAt: now,
+                            lastSeen: now
+                        }, { merge: true });
+                    
+                    console.log(`✅ Registered as participant: ${this.userName} (${participantId})`);
+                    
+                    // Clear any existing heartbeat
+                    if (this.participantHeartbeat) {
+                        clearInterval(this.participantHeartbeat);
+                    }
+                    // Update lastSeen every 10 seconds to show active status
+                    this.participantHeartbeat = setInterval(async () => {
+                        try {
+                            await this.db.collection('sessions').doc(this.sessionId)
+                                .collection('participants').doc(participantId).update({
+                                    lastSeen: Date.now()
+                                });
+                            console.log(`💓 Heartbeat sent for ${this.userName}`);
+                        } catch (error) {
+                            console.error('❌ Heartbeat error:', error);
+                        }
+                    }, 10000);
+                    
+                    console.log(`✅ Registered as participant: ${this.userName} (${participantId})`);
+                } catch (error) {
+                    console.error('❌ Error registering participant:', error);
+                }
+            },
+            
+            updateFPS() {
+                this.fps = parseFloat(document.getElementById('fpsSelect').value);
+                this.updateTimecode();
+            },
+            
+            async detectFrameRate() {
+                // Try to detect frame rate by measuring frame intervals
+                const video = this.video;
+                if (!video || video.readyState < 2) return;
+                
+                return new Promise((resolve) => {
+                    let frameTimes = [];
+                    let frameCount = 0;
+                    const maxSamples = 30;
+                    
+                    const measureFrame = () => {
+                        if (frameCount >= maxSamples) {
+                            // Calculate average frame interval
+                            const intervals = [];
+                            for (let i = 1; i < frameTimes.length; i++) {
+                                intervals.push(frameTimes[i] - frameTimes[i-1]);
+                            }
+                            const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
+                            const detectedFPS = 1000 / avgInterval;
+                            
+                            // Round to common frame rates
+                            const commonFPS = [23.976, 24, 25, 29.97, 30, 50, 60];
+                            let closestFPS = commonFPS[0];
+                            let minDiff = Math.abs(detectedFPS - closestFPS);
+                            
+                            for (let fps of commonFPS) {
+                                const diff = Math.abs(detectedFPS - fps);
+                                if (diff < minDiff) {
+                                    minDiff = diff;
+                                    closestFPS = fps;
+                                }
+                            }
+                            
+                            this.detectedFPS = closestFPS;
+                            this.fps = closestFPS;
+                            
+                            // Update UI
+                            document.getElementById('fpsSelect').value = closestFPS;
+                            document.getElementById('metaFrameRate').textContent = 
+                                `Detected Frame Rate: ${closestFPS} fps (auto-detected)`;
+                            
+                            console.log('Detected frame rate:', closestFPS);
+                            video.pause();
+                            video.currentTime = 0;
+                            resolve(closestFPS);
+                            return;
+                        }
+                        
+                        frameTimes.push(performance.now());
+                        frameCount++;
+                        requestAnimationFrame(measureFrame);
+                    };
+                    
+                    // Start playback to measure frames
+                    video.currentTime = 1; // Skip to 1 second to avoid any intro issues
+                    video.play();
+                    requestAnimationFrame(measureFrame);
+                    
+                    // Timeout after 3 seconds
+                    setTimeout(() => {
+                        video.pause();
+                        video.currentTime = 0;
+                        resolve(30); // Default to 30
+                    }, 3000);
+                });
+            },
+            
+            showVideoMetadata() {
+                const video = this.video;
+                const metadata = document.getElementById('videoMetadata');
+                
+                if (video.videoWidth && video.videoHeight) {
+                    document.getElementById('metaResolution').textContent = 
+                        `Resolution: ${video.videoWidth} × ${video.videoHeight}`;
+                }
+                
+                if (video.duration) {
+                    const duration = video.duration;
+                    const hours = Math.floor(duration / 3600);
+                    const minutes = Math.floor((duration % 3600) / 60);
+                    const seconds = Math.floor(duration % 60);
+                    document.getElementById('metaDuration').textContent = 
+                        `Duration: ${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                }
+                
+                // Try to get codec info from video element
+                const codecElement = document.getElementById('metaCodec');
+                const colorSpaceElement = document.getElementById('metaColorSpace');
+                
+                // HTML5 video has limited metadata exposure
+                try {
+                    // Check if video has source with type attribute
+                    const source = video.querySelector('source');
+                    if (source && source.type) {
+                        codecElement.textContent = `Codec: ${source.type}`;
+                    } else if (video.src) {
+                        // Infer from file extension
+                        const ext = video.src.split('.').pop().split('?')[0].toLowerCase();
+                        const codecMap = {
+                            'mp4': 'H.264 / AAC',
+                            'webm': 'VP8 / VP9',
+                            'mov': 'ProRes / H.264',
+                            'mxf': 'DNxHD / ProRes'
+                        };
+                        codecElement.textContent = `Codec: ${codecMap[ext] || 'Unknown'}`;
+                    } else {
+                        codecElement.textContent = 'Codec: Unknown';
+                    }
+                } catch (e) {
+                    codecElement.textContent = 'Codec: Unknown';
+                }
+                
+                // Try to get color space from video color metadata
+                try {
+                    // Modern browsers expose videoColorSpace on some video elements
+                    if (video.videoWidth && video.videoHeight) {
+                        // Check for VideoColorSpace API (newer Chrome/Edge)
+                        if (typeof VideoColorSpace !== 'undefined' && video.getVideoPlaybackQuality) {
+                            // Attempt to access color space info
+                            const tracks = video.videoTracks;
+                            if (tracks && tracks.length > 0) {
+                                colorSpaceElement.textContent = 'Color Space: Available in video metadata';
+                            } else {
+                                // Most common defaults based on resolution
+                                const isHD = video.videoHeight >= 720;
+                                const is4K = video.videoHeight >= 2160;
+                                
+                                if (is4K) {
+                                    colorSpaceElement.textContent = 'Color Space: Likely Rec.2020 or Rec.709 (4K)';
+                                } else if (isHD) {
+                                    colorSpaceElement.textContent = 'Color Space: Likely Rec.709 (HD)';
+                                } else {
+                                    colorSpaceElement.textContent = 'Color Space: Likely Rec.601 (SD)';
+                                }
+                            }
+                        } else {
+                            // Fallback: infer from resolution
+                            const isHD = video.videoHeight >= 720;
+                            const is4K = video.videoHeight >= 2160;
+                            
+                            if (is4K) {
+                                colorSpaceElement.textContent = 'Color Space: Inferred Rec.2020/709 (4K)';
+                            } else if (isHD) {
+                                colorSpaceElement.textContent = 'Color Space: Inferred Rec.709 (HD)';
+                            } else {
+                                colorSpaceElement.textContent = 'Color Space: Inferred Rec.601 (SD)';
+                            }
+                        }
+                    } else {
+                        colorSpaceElement.textContent = 'Color Space: Not available';
+                    }
+                } catch (e) {
+                    colorSpaceElement.textContent = 'Color Space: Browser does not expose this data';
+                }
+                
+                metadata.style.display = 'block';
+            },
+            
+            toggleMetadata() {
+                const content = document.getElementById('metadataContent');
+                const icon = document.getElementById('metadataToggleIcon');
+                
+                if (content.classList.contains('hidden')) {
+                    content.classList.remove('hidden');
+                    icon.textContent = '▼';
+                } else {
+                    content.classList.add('hidden');
+                    icon.textContent = '▶';
+                }
+            },
+            
+            togglePlayPause() {
+                if (this.video.paused) {
+                    this.video.play();
+                } else {
+                    this.video.pause();
+                }
+                // Sync playback state to Firebase
+                this.syncPlaybackState();
+            },
+            
+            skipBack() {
+                this.video.currentTime = Math.max(0, this.video.currentTime - 5);
+                this.syncPlaybackState();
+            },
+            
+            skipForward() {
+                this.video.currentTime = Math.min(this.video.duration, this.video.currentTime + 5);
+                this.syncPlaybackState();
+            },
+            
+            previousFrame() {
+                console.log('⏮️ Previous frame');
+                this.video.pause();
+                const frameDuration = 1 / this.fps;
+                this.video.currentTime = Math.max(0, this.video.currentTime - frameDuration);
+                console.log(`   New time: ${this.video.currentTime.toFixed(3)}s`);
+                this.syncPlaybackState();
+            },
+            
+            nextFrame() {
+                console.log('⏭️ Next frame');
+                this.video.pause();
+                const frameDuration = 1 / this.fps;
+                this.video.currentTime = Math.min(this.video.duration, this.video.currentTime + frameDuration);
+                console.log(`   New time: ${this.video.currentTime.toFixed(3)}s`);
+                this.syncPlaybackState();
+            },
+            
+            async syncPlaybackState() {
+                if (!this.db || !this.sessionId) return;
+                
+                try {
+                    await this.db.collection('sessions').doc(this.sessionId).set({
+                        playbackState: {
+                            isPlaying: !this.video.paused,
+                            currentTime: this.video.currentTime,
+                            updatedBy: this.userName,
+                            timestamp: Date.now()
+                        }
+                    }, { merge: true });
+                } catch (error) {
+                    console.error('❌ Error syncing playback:', error);
+                }
+            },
+            
+            async syncOffsetToFirebase() {
+                if (!this.db || !this.sessionId) return;
+                
+                try {
+                    await this.db.collection('sessions').doc(this.sessionId).set({
+                        timecodeOffset: this.timecodeOffset
+                    }, { merge: true });
+                    console.log('✅ Timecode offset synced to Firebase');
+                } catch (error) {
+                    console.error('❌ Error syncing offset:', error);
+                }
+            },
+            
+            updateTimecode() {
+                let time = Math.max(0, this.video.currentTime + this.timecodeOffset); // Prevent negative time
+                
+                if (this.useDropFrame && (this.fps === 29.97 || this.fps === 59.94)) {
+                    // Drop-frame timecode calculation for 29.97 or 59.94
+                    // Drop 2 frames every minute except every 10th minute
+                    const dropFrames = this.fps === 59.94 ? 4 : 2;
+                    const framesPerHour = Math.round(this.fps * 3600);
+                    const framesPer24Hours = framesPerHour * 24;
+                    const framesPer10Minutes = Math.round(this.fps * 600);
+                    const framesPerMinute = Math.round(this.fps * 60) - dropFrames;
+                    
+                    let totalFrames = Math.round(time * this.fps);
+                    
+                    // Calculate drop-frame timecode
+                    const d = Math.floor(totalFrames / framesPer10Minutes);
+                    const m = totalFrames % framesPer10Minutes;
+                    
+                    if (m > dropFrames) {
+                        totalFrames += dropFrames * 9 * d + dropFrames * Math.floor((m - dropFrames) / framesPerMinute);
+                    } else {
+                        totalFrames += dropFrames * 9 * d;
+                    }
+                    
+                    const fps = Math.round(this.fps);
+                    const frames = totalFrames % fps;
+                    const seconds = Math.floor(totalFrames / fps) % 60;
+                    const minutes = Math.floor(totalFrames / (fps * 60)) % 60;
+                    const hours = Math.floor(totalFrames / (fps * 3600));
+                    
+                    // Use semicolons for drop-frame
+                    const timecode = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')};${String(frames).padStart(2, '0')}`;
+                    document.getElementById('timecode').textContent = timecode;
+                } else {
+                    // Non-drop-frame timecode
+                    const hours = Math.floor(time / 3600);
+                    const minutes = Math.floor((time % 3600) / 60);
+                    const seconds = Math.floor(time % 60);
+                    const frames = Math.min(Math.floor(this.fps) - 1, Math.round((time % 1) * this.fps));
+                    
+                    const timecode = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}:${String(frames).padStart(2, '0')}`;
+                    document.getElementById('timecode').textContent = timecode;
+                }
+            },
+            
+            toggleDropFrame() {
+                this.useDropFrame = document.getElementById('dropFrame').checked;
+                this.updateTimecode();
+                
+                if (this.useDropFrame) {
+                    if (this.fps !== 29.97 && this.fps !== 59.94) {
+                        this.showMessage('⚠️ Drop-frame is typically only used with 29.97 or 59.94 fps', false);
+                    } else {
+                        this.showMessage('✓ Drop-frame timecode enabled');
+                    }
+                } else {
+                    this.showMessage('✓ Non-drop-frame timecode');
+                }
+            },
+            
+            updateMarkerTypes() {
+                const deptSelect = document.getElementById('departmentSelect');
+                const markerSelect = document.getElementById('markerType');
+                const musicMetadata = document.getElementById('musicMetadata');
+                const selectedDept = deptSelect.value;
+                
+                // Show/hide music metadata based on department
+                if (selectedDept === 'music') {
+                    musicMetadata.classList.remove('hidden');
+                } else {
+                    musicMetadata.classList.add('hidden');
+                }
+                
+                // Clear and repopulate marker dropdown
+                markerSelect.innerHTML = '';
+                
+                if (selectedDept === 'global') {
+                    // Show ALL markers from ALL departments in alphabetical order
+                    this.currentDepartment = 'music'; // Default to music for saving
+                    
+                    const allMarkers = [];
+                    Object.keys(this.departments).forEach(deptKey => {
+                        this.departments[deptKey].markers.forEach(marker => {
+                            // Avoid duplicates
+                            if (!allMarkers.find(m => m.value === marker.value)) {
+                                allMarkers.push(marker);
+                            }
+                        });
+                    });
+                    
+                    // Sort alphabetically
+                    allMarkers.sort((a, b) => a.label.localeCompare(b.label));
+                    
+                    allMarkers.forEach(marker => {
+                        const option = document.createElement('option');
+                        option.value = marker.value;
+                        option.textContent = marker.label;
+                        markerSelect.appendChild(option);
+                    });
+                } else {
+                    // Show markers for selected department
+                    this.currentDepartment = selectedDept;
+                    const markers = this.departments[selectedDept].markers;
+                    
+                    markers.forEach(marker => {
+                        const option = document.createElement('option');
+                        option.value = marker.value;
+                        option.textContent = marker.label;
+                        markerSelect.appendChild(option);
+                    });
+                }
+            },
+            
+            handleDepartmentFilter(clicked) {
+                const globalCheck = document.getElementById('filter-global');
+                const musicCheck = document.getElementById('filter-music');
+                const soundCheck = document.getElementById('filter-sound');
+                const vfxCheck = document.getElementById('filter-vfx');
+                const editCheck = document.getElementById('filter-edit');
+                const colorCheck = document.getElementById('filter-color');
+                
+                // If Global was clicked and is now checked, uncheck all others
+                if (clicked === 'global' && globalCheck.checked) {
+                    musicCheck.checked = false;
+                    soundCheck.checked = false;
+                    vfxCheck.checked = false;
+                    editCheck.checked = false;
+                    colorCheck.checked = false;
+                    this.activeFilters = ['global'];
+                } else {
+                    // Build active filters array from checked boxes
+                    this.activeFilters = [];
+                    
+                    if (musicCheck.checked) this.activeFilters.push('music');
+                    if (soundCheck.checked) this.activeFilters.push('sound');
+                    if (vfxCheck.checked) this.activeFilters.push('vfx');
+                    if (editCheck.checked) this.activeFilters.push('edit');
+                    if (colorCheck.checked) this.activeFilters.push('color');
+                    
+                    // If any specific department is checked, uncheck Global
+                    if (this.activeFilters.length > 0) {
+                        globalCheck.checked = false;
+                    } else {
+                        // If nothing is checked, default to Global
+                        globalCheck.checked = true;
+                        this.activeFilters = ['global'];
+                    }
+                }
+                
+                console.log('Active filters:', this.activeFilters);
+                this.refreshHitPoints();
+            },
+            
+            updateTimecodeOffset() {
+                const input = document.getElementById('timecodeOffset').value.trim();
+                if (!input) {
+                    this.timecodeOffset = 0;
+                    this.updateTimecode();
+                    this.recalculateEventTimecodes();
+                    this.syncOffsetToFirebase();
+                    return;
+                }
+                
+                // Parse timecode format HH:MM:SS:FF
+                const parts = input.split(':');
+                if (parts.length === 4) {
+                    const hours = parseInt(parts[0]) || 0;
+                    const minutes = parseInt(parts[1]) || 0;
+                    const seconds = parseInt(parts[2]) || 0;
+                    const frames = parseInt(parts[3]) || 0;
+                    
+                    // Calculate offset in seconds with precise frame calculation
+                    this.timecodeOffset = hours * 3600 + minutes * 60 + seconds + (frames / this.fps);
+                    
+                    // Save to localStorage
+                    localStorage.setItem('film-spotter-offset-' + this.sessionId, this.timecodeOffset.toString());
+                    
+                    this.updateTimecode();
+                    this.recalculateEventTimecodes();
+                    this.syncOffsetToFirebase();
+                    
+                    // Show what we actually set it to
+                    const verifyTime = this.timecodeOffset;
+                    const vHours = Math.floor(verifyTime / 3600);
+                    const vMinutes = Math.floor((verifyTime % 3600) / 60);
+                    const vSeconds = Math.floor(verifyTime % 60);
+                    const vFrames = Math.round((verifyTime % 1) * this.fps);
+                    const verifyTC = `${String(vHours).padStart(2, '0')}:${String(vMinutes).padStart(2, '0')}:${String(vSeconds).padStart(2, '0')}:${String(vFrames).padStart(2, '0')}`;
+                    
+                    this.showMessage('✓ Timecode offset updated - event timecodes recalculated');
+                } else {
+                    alert('Invalid timecode format. Use HH:MM:SS:FF (e.g., 01:26:18:10)');
+                }
+            },
+            
+            recalculateEventTimecodes() {
+                // Recalculate timecodes for all events that haven't been manually edited
+                let updatedCount = 0;
+                this.storage.hitPoints.forEach(hp => {
+                    if (!hp.manuallyEditedTimecode) {
+                        // Recalculate timecode from video time + offset
+                        const totalSeconds = hp.time + this.timecodeOffset;
+                        const hours = Math.floor(totalSeconds / 3600);
+                        const minutes = Math.floor((totalSeconds % 3600) / 60);
+                        const seconds = Math.floor(totalSeconds % 60);
+                        const frames = Math.round((totalSeconds % 1) * this.fps);
+                        
+                        const separator = this.useDropFrame ? ';' : ':';
+                        hp.timecode = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}${separator}${String(frames).padStart(2, '0')}`;
+                        updatedCount++;
+                    }
+                });
+                
+                if (updatedCount > 0) {
+                    this.saveStoredData();
+                    this.refreshHitPoints();
+                }
+            },
+            
+            toggleFollowEvents() {
+                this.followEvents = document.getElementById('followEvents').checked;
+                if (this.followEvents) {
+                    this.showMessage('📍 Following events - will auto-scroll');
+                } else {
+                    this.showMessage('Follow events disabled');
+                }
+            },
+            
+            highlightCurrentEvent() {
+                // Throttle updates to every 100ms to prevent flashing
+                const now = Date.now();
+                if (now - this.lastHighlightUpdate < 100) {
+                    return;
+                }
+                this.lastHighlightUpdate = now;
+                
+                const currentTime = this.video.currentTime;
+                
+                // Find the current event (the most recent one we've passed)
+                let currentEvent = null;
+                let nextEvent = null;
+                
+                // Sort events by time
+                const sortedEvents = [...this.storage.hitPoints].sort((a, b) => a.time - b.time);
+                
+                // Find the LAST event we've passed (or are very close to)
+                for (let i = sortedEvents.length - 1; i >= 0; i--) {
+                    // We've passed this event (with 0.2s tolerance for timing jitter)
+                    if (currentTime >= sortedEvents[i].time - 0.2) {
+                        currentEvent = sortedEvents[i];
+                        nextEvent = sortedEvents[i + 1] || null;
+                        break;
+                    }
+                }
+                
+                // Only update if the highlighted event has changed
+                const newHighlightId = currentEvent ? currentEvent.id : null;
+                const highlightChanged = this.currentHighlightedEventId !== newHighlightId;
+                
+                if (highlightChanged) {
+                    console.log(`💡 Highlight changed: ${this.currentHighlightedEventId} → ${newHighlightId}`);
+                }
+                
+                // Update highlights
+                const eventElements = document.querySelectorAll('.hit-point');
+                eventElements.forEach(el => {
+                    const timecodeSpan = el.querySelector('.timecode-editable');
+                    if (!timecodeSpan) return;
+                    
+                    const isCurrentEvent = currentEvent && timecodeSpan.textContent === currentEvent.timecode;
+                    const currentBg = el.style.backgroundColor;
+                    
+                    if (isCurrentEvent) {
+                        // This is the current event
+                        if (highlightChanged) {
+                            // JUST became current - fade in
+                            el.style.transition = 'background-color 0.8s ease-in';
+                            el.style.backgroundColor = 'rgba(0, 102, 204, 0.15)';
+                            console.log(`✨ Fading IN: ${timecodeSpan.textContent} (was: ${currentBg})`);
+                        } else {
+                            // Already current - keep it lit (no transition to avoid flashing)
+                            el.style.transition = 'none';
+                            el.style.backgroundColor = 'rgba(0, 102, 204, 0.15)';
+                            // Only log if background was somehow wrong
+                            if (!currentBg || !currentBg.includes('102, 204')) {
+                                console.log(`🔧 Maintaining highlight: ${timecodeSpan.textContent} (was: ${currentBg})`);
+                            }
+                        }
+                    } else {
+                        // Not current
+                        if (currentBg && currentBg.includes('102, 204')) {
+                            // Was highlighted, now fade to black (match list background)
+                            el.style.transition = 'background-color 1.5s ease-out';
+                            el.style.backgroundColor = '#1a1a1a'; // Dark background to match
+                            if (highlightChanged) {
+                                console.log(`💨 Fading OUT: ${timecodeSpan.textContent} to black`);
+                            }
+                        }
+                    }
+                });
+                
+                // Update tracked highlighted event
+                this.currentHighlightedEventId = newHighlightId;
+                
+                // Auto-scroll to current event if Follow Events is enabled
+                if (this.followEvents && highlightChanged && currentEvent) {
+                    console.log(`📍 Follow Events: Looking for ${currentEvent.timecode}`);
+                    const currentElement = Array.from(eventElements).find(el => {
+                        const timecodeSpan = el.querySelector('.timecode-editable');
+                        return timecodeSpan && timecodeSpan.textContent === currentEvent.timecode;
+                    });
+                    
+                    if (currentElement) {
+                        // Get the ACTUAL scrollable container (tab-content parent, not hitPointsList)
+                        const container = document.getElementById('hitpointsTab');
+                        if (container) {
+                            // Calculate position to scroll to (center the element)
+                            const elementTop = currentElement.offsetTop;
+                            const containerHeight = container.clientHeight;
+                            const elementHeight = currentElement.clientHeight;
+                            
+                            // Add offset to account for filters/follow events header (~150px)
+                            const headerOffset = 150;
+                            const scrollPosition = elementTop - (containerHeight / 2) + (elementHeight / 2) - headerOffset;
+                            
+                            console.log(`📍 Scrolling to ${currentEvent.timecode}: offset=${elementTop}, scrollTo=${scrollPosition}`);
+                            
+                            container.scrollTo({
+                                top: scrollPosition,
+                                behavior: 'smooth'
+                            });
+                        } else {
+                            console.log(`⚠️ Container 'hitpointsTab' not found`);
+                        }
+                    } else {
+                        console.log(`⚠️ Element not found for ${currentEvent.timecode}`);
+                    }
+                } else {
+                    if (highlightChanged && currentEvent) {
+                        console.log(`📍 Follow Events disabled (followEvents=${this.followEvents})`);
+                    }
+                }
+            },
+            
+            updateTimelineMarkers() {
+                const duration = this.video.duration;
+                if (!duration) return;
+                
+                const markersContainer = document.getElementById('timelineMarkers');
+                if (!markersContainer) return;
+                
+                markersContainer.innerHTML = '';
+                
+                // Filter markers by active filters
+                let filteredPoints = this.storage.hitPoints;
+                if (!this.activeFilters.includes('global')) {
+                    filteredPoints = this.storage.hitPoints.filter(hp => 
+                        this.activeFilters.includes(hp.department || 'music')
+                    );
+                }
+                
+                filteredPoints.forEach(hp => {
+                    const marker = document.createElement('div');
+                    marker.className = 'timeline-marker';
+                    const position = (hp.time / duration) * 100;
+                    
+                    // Get color from stored marker or department config
+                    const color = hp.color || '#ffcc00';
+                    
+                    // Set position and styling
+                    marker.style.left = position + '%';
+                    marker.style.background = color;
+                    marker.setAttribute('style', marker.getAttribute('style') + '; width: 3px !important; min-width: 3px !important; max-width: 3px !important;');
+                    
+                    // Get label from department config
+                    const dept = hp.department || 'music';
+                    const deptConfig = this.departments[dept];
+                    const markerConfig = deptConfig.markers.find(m => m.value === hp.type);
+                    const label = markerConfig ? markerConfig.label : hp.type;
+                    
+                    marker.title = `${label}: ${hp.timecode} - ${hp.note}`;
+                    marker.onclick = () => this.jumpToHitPoint(hp.time);
+                    markersContainer.appendChild(marker);
+                });
+            },
+            
+            showMessage(text, isError = false) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = isError ? 'error-message' : 'success-message';
+                messageDiv.textContent = text;
+                document.body.appendChild(messageDiv);
+                
+                setTimeout(() => {
+                    messageDiv.remove();
+                }, 3000);
+            },
+            
+            async markHitPoint() {
+                const note = document.getElementById('hitPointNote').value.trim();
+                const time = this.video.currentTime;
+                const markerType = document.getElementById('markerType').value;
+                const deptSelect = document.getElementById('departmentSelect').value;
+                
+                // Determine actual department (if Global, determine from marker type)
+                let department = this.currentDepartment;
+                if (deptSelect === 'global') {
+                    // Find which department this marker belongs to
+                    for (let deptKey in this.departments) {
+                        if (this.departments[deptKey].markers.find(m => m.value === markerType)) {
+                            department = deptKey;
+                            break;
+                        }
+                    }
+                }
+                
+                if (!time && time !== 0) {
+                    this.showMessage('Please load a video first', true);
+                    return;
+                }
+                
+                // Get marker color from department config
+                const deptConfig = this.departments[department];
+                const markerConfig = deptConfig.markers.find(m => m.value === markerType);
+                const markerColor = markerConfig ? markerConfig.color : deptConfig.color;
+                
+                const hitPoint = {
+                    id: `${this.userName}-${Date.now()}`, // Unique ID with username
+                    time: time,
+                    timecode: document.getElementById('timecode').textContent,
+                    note: note || 'Unmarked marker',
+                    timestamp: new Date().toISOString(),
+                    user: this.userName,
+                    type: markerType,
+                    department: department,
+                    color: markerColor,
+                    manuallyEditedTimecode: false // Track if user manually edited timecode
+                };
+                
+                // Add music metadata if applicable
+                if (department === 'music') {
+                    const categoryChecked = document.querySelector('input[name="category"]:checked');
+                    const usageChecked = document.querySelector('input[name="usage"]:checked');
+                    hitPoint.category = categoryChecked ? categoryChecked.value : null;
+                    hitPoint.usage = usageChecked ? usageChecked.value : null;
+                }
+                
+                console.log('Marking hit point:', hitPoint);
+                
+                this.storage.hitPoints.push(hitPoint);
+                this.storage.hitPoints.sort((a, b) => a.time - b.time);
+                
+                // Save to Firebase IMMEDIATELY as individual document
+                try {
+                    await this.saveMarkerToFirebase(hitPoint);
+                } catch (error) {
+                    // Error already shown by saveMarkerToFirebase
+                    console.error('Failed to save to Firebase, but saved locally');
+                }
+                
+                // Also save to localStorage as backup
+                localStorage.setItem('film-spotter-hitpoints-' + this.sessionId, JSON.stringify(this.storage.hitPoints));
+                
+                const markerLabel = markerConfig ? markerConfig.label : markerType;
+                this.showMessage(`✓ ${markerLabel} marked at ` + hitPoint.timecode);
+                
+                // Clear inputs
+                document.getElementById('hitPointNote').value = '';
+                if (department === 'music') {
+                    document.querySelectorAll('input[name="category"]').forEach(cb => cb.checked = false);
+                    document.querySelectorAll('input[name="usage"]').forEach(cb => cb.checked = false);
+                }
+                
+                await this.refreshHitPoints();
+            },
+            
+            async refreshHitPoints() {
+                const listElement = document.getElementById('hitPointsList');
+                const emptyElement = document.getElementById('emptyHitPoints');
+                
+                // Filter hit points by active filters
+                let filteredPoints = this.storage.hitPoints;
+                if (!this.activeFilters.includes('global')) {
+                    filteredPoints = this.storage.hitPoints.filter(hp => 
+                        this.activeFilters.includes(hp.department || 'music')
+                    );
+                }
+                
+                if (filteredPoints.length === 0) {
+                    listElement.innerHTML = '';
+                    emptyElement.classList.remove('hidden');
+                } else {
+                    emptyElement.classList.add('hidden');
+                    listElement.innerHTML = filteredPoints.map(hp => {
+                        // Get label and color from department config
+                        const dept = hp.department || 'music';
+                        const deptConfig = this.departments[dept];
+                        const markerConfig = deptConfig.markers.find(m => m.value === hp.type);
+                        const label = markerConfig ? markerConfig.label : hp.type;
+                        const color = hp.color || (markerConfig ? markerConfig.color : deptConfig.color);
+                        
+                        // Short label for display
+                        let shortLabel = label;
+                        if (label === 'Music In') shortLabel = 'M-IN';
+                        else if (label === 'Music Out') shortLabel = 'M-OUT';
+                        else if (label === 'Song In') shortLabel = 'S-IN';
+                        else if (label === 'Song Out') shortLabel = 'S-OUT';
+                        else if (label === 'Audio Reference') shortLabel = 'AREF';
+                        else if (label === 'Hit Point') shortLabel = '•';
+                        else if (label === 'Backgrounds') shortLabel = 'BG';
+                        else if (label === 'Clean Up') shortLabel = 'CLNP';
+                        
+                        // Category/Usage abbreviations for music department
+                        let metadataTag = '';
+                        if (dept === 'music' && (hp.category || hp.usage)) {
+                            const catAbbr = hp.category === 'source' ? 'S' : hp.category === 'underscore' ? 'U' : '';
+                            const useAbbr = hp.usage === 'bg-inst' ? 'BI' : 
+                                           hp.usage === 'bg-vocal' ? 'BV' : 
+                                           hp.usage === 'vis-inst' ? 'VI' : 
+                                           hp.usage === 'vis-vocal' ? 'VV' : '';
+                            
+                            const parts = [];
+                            if (catAbbr) parts.push(catAbbr);
+                            if (useAbbr) parts.push(useAbbr);
+                            
+                            if (parts.length > 0) {
+                                metadataTag = ` <span style="font-size: 10px; color: #808080;">- ${parts.join('/')}</span>`;
+                            }
+                        }
+                        
+                        return `
+                            <div class="hit-point" style="border-left-color: ${color};">
+                                <div class="hit-point-header">
+                                    <span class="hit-point-time" style="color: ${color};">
+                                        <span class="marker-label" style="background: ${color}33;">${shortLabel}</span>
+                                        <span class="timecode-editable">${hp.timecode}</span>${metadataTag}
+                                    </span>
+                                    <div class="hit-point-actions">
+                                        <button class="icon-btn" onclick="app.jumpToHitPoint(${hp.time})" title="Jump">↩</button>
+                                        <button class="icon-btn" onclick="app.openEditModal('${hp.id}')" title="Edit">✎</button>
+                                        <button class="icon-btn" onclick="app.deleteHitPoint('${hp.id}')" title="Delete">×</button>
+                                    </div>
+                                </div>
+                                <div class="hit-point-note">${hp.note}</div>
+                                <div class="hit-point-user">— ${hp.user || 'Unknown'} • ${deptConfig.name}</div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+                
+                this.updateTimelineMarkers();
+            },
+            
+            jumpToHitPoint(time) {
+                this.video.currentTime = time;
+                this.syncPlaybackState(); // Sync jump to other browsers
+            },
+            
+            async deleteHitPoint(id) {
+                this.storage.hitPoints = this.storage.hitPoints.filter(hp => hp.id !== id);
+                
+                // Delete from Firebase
+                if (this.db && this.sessionId) {
+                    try {
+                        await this.db.collection('sessions').doc(this.sessionId)
+                            .collection('markers').doc(id).delete();
+                        console.log(`🗑️ Deleted marker ${id} from Firebase`);
+                    } catch (error) {
+                        console.error('❌ Error deleting marker from Firebase:', error);
+                    }
+                }
+                
+                // Save to localStorage
+                localStorage.setItem('film-spotter-hitpoints-' + this.sessionId, JSON.stringify(this.storage.hitPoints));
+                
+                await this.refreshHitPoints();
+            },
+            
+            openEditModal(id) {
+                const hitPoint = this.storage.hitPoints.find(hp => hp.id === id);
+                if (!hitPoint) return;
+                
+                this.editingEventId = id;
+                
+                // Populate modal fields
+                document.getElementById('editTimecode').value = hitPoint.timecode;
+                document.getElementById('editNote').value = hitPoint.note;
+                
+                // Show/hide music metadata based on department
+                const musicMetadata = document.getElementById('editMusicMetadata');
+                if (hitPoint.department === 'music') {
+                    musicMetadata.classList.remove('hidden');
+                    
+                    // Set category checkboxes
+                    document.querySelectorAll('input[name="edit-category"]').forEach(cb => {
+                        cb.checked = (cb.value === hitPoint.category);
+                    });
+                    
+                    // Set usage checkboxes
+                    document.querySelectorAll('input[name="edit-usage"]').forEach(cb => {
+                        cb.checked = (cb.value === hitPoint.usage);
+                    });
+                } else {
+                    musicMetadata.classList.add('hidden');
+                }
+                
+                // Show modal
+                document.getElementById('editModal').classList.remove('hidden');
+            },
+            
+            closeEditModal() {
+                document.getElementById('editModal').classList.add('hidden');
+                this.editingEventId = null;
+            },
+            
+            async saveEditedEvent() {
+                console.log('💾 saveEditedEvent called');
+                console.log('   editingEventId:', this.editingEventId);
+                
+                if (!this.editingEventId) {
+                    console.error('❌ No event being edited');
+                    alert('Error: No event selected for editing');
+                    return;
+                }
+                
+                const hitPoint = this.storage.hitPoints.find(hp => hp.id === this.editingEventId);
+                if (!hitPoint) {
+                    console.error('❌ Event not found:', this.editingEventId);
+                    alert('Error: Event not found');
+                    return;
+                }
+                
+                console.log('✓ Found event to edit:', hitPoint);
+                
+                const newTimecode = document.getElementById('editTimecode').value.trim();
+                const newNote = document.getElementById('editNote').value.trim();
+                
+                // Validate timecode format
+                const parts = newTimecode.split(/[:;]/);
+                if (parts.length !== 4) {
+                    alert('Invalid timecode format. Use HH:MM:SS:FF');
+                    return;
+                }
+                
+                // Update event
+                const originalTimecode = hitPoint.timecode;
+                hitPoint.timecode = newTimecode;
+                hitPoint.note = newNote || 'Unmarked marker';
+                
+                // Mark as manually edited if timecode changed
+                if (originalTimecode !== newTimecode) {
+                    hitPoint.manuallyEditedTimecode = true;
+                }
+                
+                // Update music metadata if applicable
+                if (hitPoint.department === 'music') {
+                    const categoryChecked = document.querySelector('input[name="edit-category"]:checked');
+                    const usageChecked = document.querySelector('input[name="edit-usage"]:checked');
+                    hitPoint.category = categoryChecked ? categoryChecked.value : null;
+                    hitPoint.usage = usageChecked ? usageChecked.value : null;
+                }
+                
+                // Save to Firebase
+                await this.saveMarkerToFirebase(hitPoint);
+                
+                // Save to localStorage
+                localStorage.setItem('film-spotter-hitpoints-' + this.sessionId, JSON.stringify(this.storage.hitPoints));
+                
+                this.showMessage('✓ Event updated');
+                this.closeEditModal();
+                await this.refreshHitPoints();
+            },
+            
+            togglePasswordField() {
+                const checkbox = document.getElementById('enablePassword');
+                const passwordField = document.getElementById('sessionPassword');
+                
+                if (checkbox.checked) {
+                    passwordField.classList.remove('hidden');
+                } else {
+                    passwordField.classList.add('hidden');
+                }
+            },
+            
+            toggleParticipantsPanel() {
+                const panel = document.getElementById('participantsPanel');
+                
+                if (panel.classList.contains('hidden')) {
+                    this.updateParticipantsList();
+                    panel.classList.remove('hidden');
+                } else {
+                    panel.classList.add('hidden');
+                }
+            },
+            
+            updateParticipantsList() {
+                const listElement = document.getElementById('participantsList');
+                const users = this.activeUsers || [];
+                
+                if (users.length === 0) {
+                    listElement.innerHTML = '<p style="color: #808080; text-align: center;">No participants</p>';
+                    return;
+                }
+                
+                listElement.innerHTML = users.map(user => {
+                    const isCurrentUser = user.user === this.userName;
+                    const role = user.role || 'viewer';
+                    const roleLabel = role === 'host' ? '⭐ Host' : role === 'co-host' ? '👑 Co-Host' : '👤 Viewer';
+                    
+                    let actions = '';
+                    
+                    // Only host can manage others
+                    if (this.userRole === 'host' && !isCurrentUser) {
+                        if (role === 'co-host') {
+                            actions = `
+                                <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="app.revokeCoHost('${user.user}')">Revoke Control</button>
+                                <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="app.kickUser('${user.user}')">Kick</button>
+                            `;
+                        } else {
+                            actions = `
+                                <button class="btn" style="padding: 4px 8px; font-size: 11px;" onclick="app.giveCoHost('${user.user}')">Give Control</button>
+                                <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" onclick="app.kickUser('${user.user}')">Kick</button>
+                            `;
+                        }
+                    }
+                    
+                    return `
+                        <div style="background: #1a1a1a; padding: 12px; border-radius: 4px; margin-bottom: 8px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div style="font-weight: bold; color: ${isCurrentUser ? '#0066cc' : '#e0e0e0'};">
+                                        ${user.user}${isCurrentUser ? ' (You)' : ''}
+                                    </div>
+                                    <div style="font-size: 11px; color: #808080;">${roleLabel}</div>
+                                </div>
+                                <div style="display: flex; gap: 6px;">
+                                    ${actions}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            },
+            
+            giveCoHost(username) {
+                const user = this.activeUsers.find(u => u.user === username);
+                if (user) {
+                    user.role = 'co-host';
+                    this.saveActiveUsers();
+                    this.updateParticipantsList();
+                    this.showMessage(`✓ Gave control to ${username}`);
+                }
+            },
+            
+            revokeCoHost(username) {
+                const user = this.activeUsers.find(u => u.user === username);
+                if (user) {
+                    user.role = 'viewer';
+                    this.saveActiveUsers();
+                    this.updateParticipantsList();
+                    this.showMessage(`✓ Revoked control from ${username}`);
+                }
+            },
+            
+            kickUser(username) {
+                if (confirm(`Kick ${username} from the session?`)) {
+                    this.activeUsers = this.activeUsers.filter(u => u.user !== username);
+                    this.saveActiveUsers();
+                    this.updateParticipantsList();
+                    this.showMessage(`✓ Kicked ${username}`);
+                }
+            },
+            
+            saveActiveUsers() {
+                localStorage.setItem('film-spotter-users-' + this.sessionId, JSON.stringify(this.activeUsers));
+            },
+            
+            canControl() {
+                // Check if current user can control playback and mark events
+                if (this.allowAllControl) return true;
+                return this.userRole === 'host' || this.userRole === 'co-host';
+            },
+            
+            jumpToFrame(timecode) {
+                if (!timecode) {
+                    timecode = prompt('Enter timecode to jump to (HH:MM:SS:FF):', '00:00:00:00');
+                }
+                if (!timecode) return;
+                
+                // Parse timecode format HH:MM:SS:FF
+                const parts = timecode.trim().split(/[:;]/);
+                if (parts.length !== 4) {
+                    alert('Invalid timecode format. Use HH:MM:SS:FF');
+                    this.updateTimecode();
+                    return;
+                }
+                
+                const hours = parseInt(parts[0]) || 0;
+                const minutes = parseInt(parts[1]) || 0;
+                const seconds = parseInt(parts[2]) || 0;
+                const frames = parseInt(parts[3]) || 0;
+                
+                // Calculate time in seconds (this includes the offset calculation)
+                const targetTime = hours * 3600 + minutes * 60 + seconds + (frames / this.fps);
+                
+                // Subtract the offset to get the actual video time
+                const videoTime = targetTime - this.timecodeOffset;
+                
+                if (videoTime < 0 || videoTime > this.video.duration) {
+                    alert('Timecode is outside video duration');
+                    this.updateTimecode();
+                    return;
+                }
+                
+                this.video.currentTime = videoTime;
+                this.showMessage('✓ Jumped to ' + timecode);
+            },
+            
+            async sendChat() {
+                const input = document.getElementById('chatInput');
+                const message = input.value.trim();
+                
+                if (!message) {
+                    return;
+                }
+                
+                const chatMessage = {
+                    id: `${this.userName}-${Date.now()}`, // Unique ID with username prefix
+                    text: message,
+                    timestamp: new Date().toISOString(), // Use ISO for better sorting
+                    user: this.userName
+                };
+                
+                console.log('Sending chat message:', chatMessage);
+                
+                this.storage.chatMessages.push(chatMessage);
+                
+                // Save to Firebase IMMEDIATELY as individual document
+                try {
+                    await this.saveChatToFirebase(chatMessage);
+                } catch (error) {
+                    // Error already shown by saveChatToFirebase
+                    console.error('Failed to save chat to Firebase, but saved locally');
+                }
+                
+                // Also save to localStorage as backup
+                localStorage.setItem('film-spotter-chat-' + this.sessionId, JSON.stringify(this.storage.chatMessages));
+                
+                input.value = '';
+                await this.refreshChat();
+            },
+            
+            handleChatEnter(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault(); // Prevent form submission
+                    this.sendChat().catch(error => {
+                        console.error('❌ Error in sendChat:', error);
+                        alert(`Failed to send message: ${error.message}`);
+                    });
+                }
+            },
+            
+            getUserColor(username) {
+                // Generate consistent color for each user based on their name
+                let hash = 0;
+                for (let i = 0; i < username.length; i++) {
+                    hash = username.charCodeAt(i) + ((hash << 5) - hash);
+                }
+                
+                // Use hue rotation for distinct colors
+                const hues = [210, 270, 30, 330, 120, 180, 300, 60]; // Blue, purple, orange, pink, green, cyan, magenta, yellow
+                const hue = hues[Math.abs(hash) % hues.length];
+                
+                return `hsl(${hue}, 70%, 60%)`;
+            },
+            
+            async refreshChat() {
+                const chatElement = document.getElementById('chatMessages');
+                chatElement.innerHTML = this.storage.chatMessages.map(msg => {
+                    const userColor = this.getUserColor(msg.user || 'Anonymous');
+                    return `
+                        <div class="chat-message">
+                            <div class="chat-header">
+                                <span class="chat-user" style="color: ${userColor}; font-weight: bold;">${msg.user || 'Anonymous'}</span>
+                                <span class="chat-timestamp">${msg.timestamp}</span>
+                            </div>
+                            <div class="chat-text">${msg.text}</div>
+                        </div>
+                    `;
+                }).join('');
+                
+                chatElement.scrollTop = chatElement.scrollHeight;
+            },
+            
+            switchTab(tabName) {
+                document.querySelectorAll('.tab').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                event.target.classList.add('active');
+                
+                document.getElementById('hitpointsTab').classList.add('hidden');
+                document.getElementById('chatTab').classList.add('hidden');
+                
+                if (tabName === 'hitpoints') {
+                    document.getElementById('hitpointsTab').classList.remove('hidden');
+                } else if (tabName === 'chat') {
+                    document.getElementById('chatTab').classList.remove('hidden');
+                }
+            },
+            
+            async exportData() {
+                // Show export format selection modal
+                document.getElementById('exportModal').classList.remove('hidden');
+            },
+            
+            closeExportModal() {
+                document.getElementById('exportModal').classList.add('hidden');
+            },
+            
+            async confirmExport() {
+                const exportCSV = document.getElementById('exportCSV').checked;
+                const exportJSON = document.getElementById('exportJSON').checked;
+                const exportEDL = document.getElementById('exportEDL').checked;
+                const exportMIDI = document.getElementById('exportMIDI').checked;
+                
+                if (!exportCSV && !exportJSON && !exportEDL && !exportMIDI) {
+                    alert('Please select at least one export format');
+                    return;
+                }
+                
+                this.closeExportModal();
+                
+                const exportFiltered = document.getElementById('exportFiltered').checked;
+                
+                // Determine which events to export
+                let eventsToExport = this.storage.hitPoints;
+                
+                if (exportFiltered && !this.activeFilters.includes('global')) {
+                    eventsToExport = this.storage.hitPoints.filter(hp => 
+                        this.activeFilters.includes(hp.department || 'music')
+                    );
+                }
+                
+                if (eventsToExport.length === 0) {
+                    alert('No events to export');
+                    return;
+                }
+                
+                // Get project name for filename
+                const projectName = document.getElementById('projectNameInput').value.trim() || 'Untitled';
+                const safeProjectName = projectName.replace(/[^a-z0-9]/gi, '_');
+                
+                // Create CSV export
+                const csvContent = [
+                    ['Department', 'Type', 'Marker Label', 'Timecode', 'Category', 'Usage', 'Note', 'User'],
+                    ...eventsToExport.map(hp => {
+                        const dept = hp.department || 'music';
+                        const deptConfig = this.departments[dept];
+                        const markerConfig = deptConfig.markers.find(m => m.value === hp.type);
+                        const markerLabel = markerConfig ? markerConfig.label : hp.type;
+                        
+                        // Format category and usage
+                        const categoryLabels = {
+                            'source': 'Source Music',
+                            'underscore': 'Underscore'
+                        };
+                        const usageLabels = {
+                            'bg-inst': 'Background Instrumental',
+                            'bg-vocal': 'Background Vocal',
+                            'vis-inst': 'Visual Instrumental',
+                            'vis-vocal': 'Visual Vocal'
+                        };
+                        
+                        const category = hp.category ? categoryLabels[hp.category] : '';
+                        const usage = hp.usage ? usageLabels[hp.usage] : '';
+                        
+                        return [
+                            deptConfig.name,
+                            hp.type || 'hit-point',
+                            markerLabel,
+                            hp.timecode,
+                            category,
+                            usage,
+                            `"${hp.note.replace(/"/g, '""')}"`,
+                            hp.user || 'Unknown'
+                        ];
+                    })
+                ].map(row => row.join(',')).join('\n');
+                
+                // Create JSON export
+                const jsonContent = JSON.stringify(eventsToExport, null, 2);
+                
+                // Create EDL export (CMX 3600 format)
+                let edlContent = `TITLE: ${projectName}\nFCM: NON-DROP FRAME\n\n`;
+                eventsToExport.forEach((hp, index) => {
+                    const eventNum = String(index + 1).padStart(3, '0');
+                    const dept = hp.department || 'music';
+                    const deptConfig = this.departments[dept];
+                    const markerConfig = deptConfig.markers.find(m => m.value === hp.type);
+                    const markerLabel = markerConfig ? markerConfig.label : hp.type;
+                    
+                    // EDL format uses source in/out and record in/out
+                    // For markers, we use the same timecode for all (since they're points, not clips)
+                    const tc = hp.timecode;
+                    
+                    edlContent += `${eventNum}  AX       V     C        ${tc} ${tc} ${tc} ${tc}\n`;
+                    edlContent += `* FROM CLIP NAME: ${markerLabel}\n`;
+                    edlContent += `* COMMENT: [${deptConfig.name}] ${hp.note}\n`;
+                    if (hp.user) {
+                        edlContent += `* USER: ${hp.user}\n`;
+                    }
+                    edlContent += `\n`;
+                });
+                
+                // Download only selected formats with staggered delays
+                let delay = 0;
+                
+                if (exportCSV) {
+                    setTimeout(() => {
+                        this.downloadFile(csvContent, `${safeProjectName} - Events List - FilmSpotter.csv`, 'text/csv');
+                    }, delay);
+                    delay += 500;
+                }
+                
+                if (exportJSON) {
+                    setTimeout(() => {
+                        this.downloadFile(jsonContent, `${safeProjectName} - Events List - FilmSpotter.json`, 'application/json');
+                    }, delay);
+                    delay += 500;
+                }
+                
+                if (exportEDL) {
+                    setTimeout(() => {
+                        this.downloadFile(edlContent, `${safeProjectName} - Events List - FilmSpotter.edl`, 'text/plain');
+                    }, delay);
+                }
+                
+                // MIDI Export
+                if (exportMIDI) {
+                    const midiBytes = this.generateMIDI(eventsToExport);
+                    setTimeout(() => {
+                        this.downloadFile(midiBytes, `${safeProjectName} - Markers - FilmSpotter.mid`, 'audio/midi');
+                    }, delay);
+                }
+            },
+            
+            generateMIDI(events) {
+                // MIDI File Format (Type 1, single track with markers)
+                // Based on Standard MIDI File format 1.0
+                
+                const ticksPerQuarter = 480; // Standard resolution
+                
+                // Helper functions for MIDI encoding
+                const writeVarLen = (value) => {
+                    let buffer = [];
+                    buffer.push(value & 0x7F);
+                    value >>= 7;
+                    while (value > 0) {
+                        buffer.unshift((value & 0x7F) | 0x80);
+                        value >>= 7;
+                    }
+                    return buffer;
+                };
+                
+                const writeString = (str) => {
+                    return Array.from(new TextEncoder().encode(str));
+                };
+                
+                const write32 = (value) => {
+                    return [
+                        (value >> 24) & 0xFF,
+                        (value >> 16) & 0xFF,
+                        (value >> 8) & 0xFF,
+                        value & 0xFF
+                    ];
+                };
+                
+                const write16 = (value) => {
+                    return [
+                        (value >> 8) & 0xFF,
+                        value & 0xFF
+                    ];
+                };
+                
+                // Calculate tempo (microseconds per quarter note for 23.976 fps)
+                // Using 120 BPM as base tempo
+                const microsecondsPerQuarter = 500000; // 120 BPM
+                
+                // Build track data
+                let trackData = [];
+                
+                // Track header: Set tempo
+                trackData.push(
+                    ...writeVarLen(0), // Delta time 0
+                    0xFF, 0x51, 0x03, // Meta event: Set Tempo
+                    ...write32(microsecondsPerQuarter).slice(1) // 3 bytes for tempo
+                );
+                
+                // Track header: Time signature (4/4)
+                trackData.push(
+                    ...writeVarLen(0), // Delta time 0
+                    0xFF, 0x58, 0x04, // Meta event: Time Signature
+                    0x04, 0x02, 0x18, 0x08 // 4/4 time
+                );
+                
+                // Sort events by time
+                const sortedEvents = [...events].sort((a, b) => a.time - b.time);
+                
+                // Add markers for each event
+                sortedEvents.forEach((event, index) => {
+                    // Convert time in seconds to MIDI ticks
+                    // ticks = (seconds * ticksPerQuarter * 1000000) / microsecondsPerQuarter
+                    const ticks = Math.round((event.time * ticksPerQuarter * 1000000) / microsecondsPerQuarter);
+                    
+                    // Delta time from previous event
+                    const prevTicks = index > 0 
+                        ? Math.round((sortedEvents[index - 1].time * ticksPerQuarter * 1000000) / microsecondsPerQuarter)
+                        : 0;
+                    const deltaTime = ticks - prevTicks;
+                    
+                    // Marker text: Use first word of note, or fallback to label
+                    let markerText = event.note || '';
+                    
+                    // Extract first word (before space, dash, comma, etc.)
+                    const firstWord = markerText.trim().split(/[\s\-,;:]+/)[0];
+                    
+                    // Use first word if it exists, otherwise use the label
+                    if (firstWord && firstWord !== 'Unmarked') {
+                        markerText = firstWord;
+                    } else {
+                        // Fallback to label if no note or note is just "Unmarked marker"
+                        const dept = event.department || 'music';
+                        const deptConfig = this.departments[dept];
+                        const markerConfig = deptConfig.markers.find(m => m.value === event.type);
+                        markerText = markerConfig ? markerConfig.label : event.type;
+                    }
+                    
+                    // MIDI Marker event (FF 06)
+                    const markerBytes = writeString(markerText);
+                    trackData.push(
+                        ...writeVarLen(deltaTime),
+                        0xFF, 0x06, // Meta event: Marker
+                        markerBytes.length, // Length of marker text
+                        ...markerBytes
+                    );
+                });
+                
+                // End of track
+                trackData.push(
+                    ...writeVarLen(0), // Delta time 0
+                    0xFF, 0x2F, 0x00 // Meta event: End of Track
+                );
+                
+                // Build complete MIDI file
+                const midiFile = [];
+                
+                // Header chunk
+                midiFile.push(
+                    0x4D, 0x54, 0x68, 0x64, // "MThd"
+                    ...write32(6), // Header length
+                    ...write16(0), // Format 0 (single track)
+                    ...write16(1), // Number of tracks
+                    ...write16(ticksPerQuarter) // Ticks per quarter note
+                );
+                
+                // Track chunk
+                midiFile.push(
+                    0x4D, 0x54, 0x72, 0x6B, // "MTrk"
+                    ...write32(trackData.length), // Track length
+                    ...trackData
+                );
+                
+                return new Uint8Array(midiFile);
+            },
+            
+            downloadFile(content, filename, mimeType) {
+                const blob = new Blob([content], { type: mimeType });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            },
+            
+            async clearSession() {
+                if (!confirm('Are you sure you want to clear this session? This will delete all hit points and chat messages.')) {
+                    return;
+                }
+                
+                // Clear local storage
+                this.storage.hitPoints = [];
+                this.storage.chatMessages = [];
+                localStorage.removeItem('film-spotter-hitpoints-' + this.sessionId);
+                localStorage.removeItem('film-spotter-chat-' + this.sessionId);
+                
+                // Clear Firebase for this session
+                if (this.db && this.sessionId) {
+                    try {
+                        // Delete all markers
+                        const markersSnapshot = await this.db.collection('sessions').doc(this.sessionId)
+                            .collection('markers').get();
+                        const markerDeletes = markersSnapshot.docs.map(doc => doc.ref.delete());
+                        await Promise.all(markerDeletes);
+                        
+                        // Delete all chat
+                        const chatSnapshot = await this.db.collection('sessions').doc(this.sessionId)
+                            .collection('chat').get();
+                        const chatDeletes = chatSnapshot.docs.map(doc => doc.ref.delete());
+                        await Promise.all(chatDeletes);
+                        
+                        console.log('🗑️ Cleared Firebase data for session');
+                    } catch (error) {
+                        console.error('❌ Error clearing Firebase:', error);
+                        alert('Error clearing Firebase data. Check console.');
+                    }
+                }
+                
+                location.reload();
+            },
+            
+            startUpdateLoop() {
+                // Refresh chat every 2 seconds
+                // Hit points are handled by Firebase realtime listener
+                this.updateInterval = setInterval(async () => {
+                    await this.refreshChat();
+                }, 2000);
+            }
+        };
+        
+        // Initialize app when page loads
+        window.addEventListener('DOMContentLoaded', () => {
+            app.init();
+        });
+    </script>
+</body>
+</html>
