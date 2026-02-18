@@ -156,9 +156,38 @@
             position: relative;
         }
         
+        /* Fullscreen video centering */
+        .video-container:fullscreen {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #000;
+        }
+        
+        .video-container:fullscreen video {
+            width: auto;
+            height: auto;
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
         video {
             width: 100%;
             display: block;
+        }
+        
+        /* Hide download button and prevent context menu */
+        video::-webkit-media-controls-download-button {
+            display: none !important;
+        }
+        
+        video::-webkit-media-controls-enclosure {
+            overflow: hidden;
+        }
+        
+        video::-internal-media-controls-download-button {
+            display: none !important;
         }
         
         .timeline-markers {
@@ -274,6 +303,7 @@
             display: flex;
             gap: 10px;
             align-items: center;
+            margin-top: 20px;
         }
         
         .mark-controls input {
@@ -699,6 +729,111 @@
             justify-content: flex-end;
             gap: 10px;
         }
+        
+        /* Custom Timeline Scrubber */
+        .custom-timeline {
+            padding: 15px 0;
+            background: #1a1a1a;
+            border-top: 1px solid #404040;
+        }
+        
+        .timeline-track {
+            position: relative;
+            height: 40px;
+            background: #2a2a2a;
+            cursor: pointer;
+            margin-bottom: 8px;
+        }
+        
+        .timeline-progress {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: #0066cc;
+            border-radius: 4px 0 0 4px;
+            pointer-events: none;
+            width: 0%;
+        }
+        
+        .timeline-ticks {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .timeline-tick {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 1px;
+            background: #505050;
+        }
+        
+        .timeline-tick.major {
+            height: 50%;
+            background: #707070;
+        }
+        
+        .timeline-tick-label {
+            position: absolute;
+            bottom: 55%;
+            font-size: 10px;
+            color: #808080;
+            transform: translateX(-50%);
+            white-space: nowrap;
+        }
+        
+        .timeline-markers-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .timeline-marker-dot {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid #1a1a1a;
+            pointer-events: none;
+        }
+        
+        .timeline-handle {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 16px;
+            height: 16px;
+            background: white;
+            border: 3px solid #0066cc;
+            border-radius: 50%;
+            cursor: grab;
+            pointer-events: none;
+            left: 0%;
+        }
+        
+        .timeline-handle:active {
+            cursor: grabbing;
+        }
+        
+        .timeline-time {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #b0b0b0;
+            font-family: monospace;
+            padding: 0 20px;
+        }
     </style>
     
     <!-- Firebase SDK -->
@@ -756,7 +891,10 @@
                     
                     <!-- Host Setup Screen (shown when no ?session= in URL) -->
                     <div id="hostSetupScreen">
-                        <h2>Setup FilmSpotter Session</h2>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <h2 style="margin: 0;">Setup FilmSpotter Session</h2>
+                            <button class="btn btn-secondary" onclick="app.createNewSession()" style="padding: 6px 12px; font-size: 13px;">+ New Session</button>
+                        </div>
                         
                         <div class="form-group">
                             <label>Your Name</label>
@@ -793,10 +931,10 @@
                         
                         <div class="form-group" style="margin-bottom: 15px;">
                             <label style="display: inline-flex !important; align-items: center; gap: 8px; cursor: pointer; color: #e0e0e0; font-size: 13px; margin-bottom: 0 !important;">
-                                <input type="checkbox" id="allowAllControl" checked style="width: auto; margin: 0;">
+                                <input type="checkbox" id="allowAllControl" style="width: auto; margin: 0;">
                                 <span>Allow all participants to control and mark</span>
                             </label>
-                            <p style="font-size: 11px; color: #808080; margin: 4px 0 0 26px;">If unchecked, only host and co-hosts can control the session</p>
+                            <p style="font-size: 11px; color: #808080; margin: 4px 0 0 26px;">If unchecked, only host can control the session and grant permissions</p>
                         </div>
                         
                         <div class="help-text">
@@ -824,67 +962,37 @@
                 
                 <div id="videoPlayer" class="hidden">
                     <div class="video-container">
-                        <video id="video" controls></video>
-                        <div class="timeline-markers" id="timelineMarkers"></div>
+                        <video id="video" controlslist="nodownload" oncontextmenu="return false;"></video>
+                    </div>
+                    
+                    <!-- Custom Timeline Scrubber -->
+                    <div class="custom-timeline">
+                        <div class="timeline-track" id="timelineTrack">
+                            <div class="timeline-progress" id="timelineProgress"></div>
+                            <div class="timeline-ticks" id="timelineTicks"></div>
+                            <div class="timeline-markers-container" id="timelineMarkersContainer"></div>
+                            <div class="timeline-handle" id="timelineHandle"></div>
+                        </div>
                     </div>
                     
                     <div class="video-controls">
-                        <div id="videoMetadata" class="video-metadata-collapsed">
-                            <button class="metadata-toggle" onclick="app.toggleMetadata()">
-                                <span id="metadataToggleIcon">▶</span> Video Details
-                            </button>
-                            <div id="metadataContent" class="metadata-content hidden">
-                                <p id="metaResolution">Resolution: Loading...</p>
-                                <p id="metaDuration">Duration: Loading...</p>
-                                <p id="metaCodec">Codec: Loading...</p>
-                                <p id="metaColorSpace">Color Space: Loading...</p>
-                                
-                                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #404040;">
-                                    <div style="margin-bottom: 10px;">
-                                        <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #b0b0b0;">Original Frame Rate:</label>
-                                        <select id="fpsSelect" onchange="app.updateFPS()" style="padding: 6px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0; font-size: 13px;">
-                                            <option value="23.976" selected>23.976 fps</option>
-                                            <option value="24">24 fps</option>
-                                            <option value="25">25 fps</option>
-                                            <option value="29.97">29.97 fps</option>
-                                            <option value="30">30 fps</option>
-                                            <option value="50">50 fps</option>
-                                            <option value="60">60 fps</option>
-                                        </select>
-                                    </div>
-                                    
-                                    <div style="margin-bottom: 10px;">
-                                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px;">
-                                            <input type="checkbox" id="dropFrame" onchange="app.toggleDropFrame()">
-                                            <span>Drop-frame timecode</span>
-                                        </label>
-                                    </div>
-                                    
-                                    <div>
-                                        <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #b0b0b0;">Start Timecode Offset:</label>
-                                        <input type="text" id="timecodeOffset" placeholder="00:00:00:00" 
-                                               style="width: 140px; padding: 6px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0; font-family: monospace; font-size: 13px;"
-                                               onchange="app.updateTimecodeOffset()" />
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
                         <div class="timecode-display" id="timecode">00:00:00:00</div>
                         
-                        <div class="playback-controls">
-                            <button class="btn btn-secondary" onclick="app.togglePlayPause()">⏯ Play/Pause</button>
-                            <button class="btn btn-secondary" onclick="app.skipBack()">⏪ -5s</button>
-                            <button class="btn btn-secondary" onclick="app.skipForward()">⏩ +5s</button>
-                        </div>
-                        
-                        <div class="frame-controls">
-                            <button class="frame-btn" onclick="app.previousFrame()">◀ Previous Frame</button>
-                            <button class="frame-btn" onclick="app.nextFrame()">Next Frame ▶</button>
+                        <div class="playback-controls" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <button class="btn btn-secondary" onclick="app.togglePlayPause()" style="min-width: 40px; line-height: 1; font-size: 16px;">⏯</button>
+                            <button class="btn btn-secondary" onclick="app.skipBack()" style="min-width: 40px; line-height: 1; font-size: 16px;">⏪</button>
+                            <button class="btn btn-secondary" onclick="app.skipForward()" style="min-width: 40px; line-height: 1; font-size: 16px;">⏩</button>
+                            <button class="btn btn-secondary" onclick="app.previousFrame()" style="min-width: 40px; line-height: 1; font-size: 16px;">◀</button>
+                            <button class="btn btn-secondary" onclick="app.nextFrame()" style="min-width: 40px; line-height: 1; font-size: 16px;">▶</button>
+                            <div style="display: flex; align-items: center; gap: 6px; margin-left: 10px;">
+                                <span style="font-size: 11px; color: #b0b0b0;">Vol</span>
+                                <input type="range" id="volumeControl" min="0" max="100" value="100" onchange="app.setVolume(this.value)" style="width: 60px; cursor: pointer;">
+                            </div>
+                            <button class="btn btn-secondary" onclick="app.toggleFullscreen()" style="min-width: 40px; line-height: 1; font-size: 16px;">⛶</button>
                         </div>
                         
                         <div class="help-text">
-                            <p><kbd>Space</kbd> Play/Pause | <kbd>←</kbd> Prev Frame | <kbd>→</kbd> Next Frame | <kbd>,</kbd> -5s | <kbd>.</kbd> +5s | <kbd>M</kbd> Mark</p>
+                            <p><kbd>Space</kbd> Play/Pause | <kbd>,</kbd> -5s | <kbd>.</kbd> +5s | <kbd>←</kbd> Prev Frame | <kbd>→</kbd> Next Frame | <kbd>M</kbd> Mark</p>
                         </div>
                         
                         <div class="mark-controls">
@@ -934,6 +1042,47 @@
                                         <input type="checkbox" name="usage" value="vis-vocal" style="margin-right: 4px;">
                                         Visual Vocal
                                     </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="videoMetadata" class="video-metadata-collapsed" style="margin-top: 15px;">
+                            <button class="metadata-toggle" onclick="app.toggleMetadata()">
+                                <span id="metadataToggleIcon">▶</span> Video Details
+                            </button>
+                            <div id="metadataContent" class="metadata-content hidden">
+                                <p id="metaResolution">Resolution: Loading...</p>
+                                <p id="metaDuration">Duration: Loading...</p>
+                                <p id="metaCodec">Codec: Loading...</p>
+                                <p id="metaColorSpace">Color Space: Loading...</p>
+                                
+                                <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #404040;">
+                                    <div style="margin-bottom: 10px;">
+                                        <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #b0b0b0;">Original Frame Rate:</label>
+                                        <select id="fpsSelect" onchange="app.updateFPS()" style="padding: 6px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0; font-size: 13px;">
+                                            <option value="23.976" selected>23.976 fps</option>
+                                            <option value="24">24 fps</option>
+                                            <option value="25">25 fps</option>
+                                            <option value="29.97">29.97 fps</option>
+                                            <option value="30">30 fps</option>
+                                            <option value="50">50 fps</option>
+                                            <option value="60">60 fps</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div style="margin-bottom: 10px;">
+                                        <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-size: 12px;">
+                                            <input type="checkbox" id="dropFrame" onchange="app.toggleDropFrame()">
+                                            <span>Drop-frame timecode</span>
+                                        </label>
+                                    </div>
+                                    
+                                    <div>
+                                        <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #b0b0b0;">Start Timecode Offset:</label>
+                                        <input type="text" id="timecodeOffset" placeholder="00:00:00:00" 
+                                               style="width: 140px; padding: 6px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0; font-family: monospace; font-size: 13px;"
+                                               onchange="app.updateTimecodeOffset()" />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1088,23 +1237,70 @@
             </div>
             <div class="modal-body">
                 <p style="margin-bottom: 15px; color: #b0b0b0;">Choose which formats to export:</p>
-                <label style="display: flex; align-items: center; margin-bottom: 10px; cursor: pointer;">
-                    <input type="checkbox" id="exportCSV" checked style="margin-right: 8px;">
-                    <span>CSV (Spreadsheet)</span>
+                
+                <!-- FREE -->
+                <label style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; cursor: pointer;">
+                    <div style="display: flex; align-items: center;">
+                        <input type="checkbox" id="exportCSV" checked style="margin-right: 8px;">
+                        <span>CSV (Spreadsheet)</span>
+                    </div>
+                    <span style="font-size: 10px; color: #4CAF50; background: rgba(76, 175, 80, 0.1); padding: 2px 6px; border-radius: 3px;">FREE</span>
                 </label>
-                <label style="display: flex; align-items: center; margin-bottom: 10px; cursor: pointer;">
-                    <input type="checkbox" id="exportJSON" checked style="margin-right: 8px;">
-                    <span>JSON (Data)</span>
+                
+                <!-- PAID TIER -->
+                <label style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; cursor: not-allowed; opacity: 0.5;">
+                    <div style="display: flex; align-items: center;">
+                        <input type="checkbox" id="exportJSON" disabled style="margin-right: 8px;">
+                        <span>JSON (Data)</span>
+                    </div>
+                    <span style="font-size: 10px; color: #FFA726; background: rgba(255, 167, 38, 0.1); padding: 2px 6px; border-radius: 3px;">INDIE</span>
                 </label>
-                <label style="display: flex; align-items: center; margin-bottom: 10px; cursor: pointer;">
-                    <input type="checkbox" id="exportEDL" checked style="margin-right: 8px;">
-                    <span>EDL (Edit Decision List)</span>
+                
+                <label style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; cursor: not-allowed; opacity: 0.5;">
+                    <div style="display: flex; align-items: center;">
+                        <input type="checkbox" id="exportEDL" disabled style="margin-right: 8px;">
+                        <span>EDL (Edit Decision List)</span>
+                    </div>
+                    <span style="font-size: 10px; color: #FFA726; background: rgba(255, 167, 38, 0.1); padding: 2px 6px; border-radius: 3px;">INDIE</span>
                 </label>
-                <label style="display: flex; align-items: center; margin-bottom: 15px; cursor: pointer;">
-                    <input type="checkbox" id="exportMIDI" checked style="margin-right: 8px;">
-                    <span>MIDI (DAW Markers)</span>
+                
+                <label style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px; cursor: not-allowed; opacity: 0.5;">
+                    <div style="display: flex; align-items: center;">
+                        <input type="checkbox" id="exportMIDI" disabled style="margin-right: 8px;">
+                        <span>MIDI (DAW Markers)</span>
+                    </div>
+                    <span style="font-size: 10px; color: #FFA726; background: rgba(255, 167, 38, 0.1); padding: 2px 6px; border-radius: 3px;">INDIE</span>
                 </label>
-                <button class="btn" onclick="app.confirmExport()" style="width: 100%;">Export Selected</button>
+                
+                <button class="btn" onclick="app.confirmExport()" style="width: 100%; margin-bottom: 10px;">Export Selected</button>
+                <button class="btn btn-secondary" onclick="app.showUpgradeModal()" style="width: 100%;">Unlock All Exports →</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Upgrade Modal -->
+    <div id="upgradeModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>Upgrade to Indie Plan</h3>
+                <button class="close-btn" onclick="app.closeUpgradeModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 20px; color: #e0e0e0;">Unlock all export formats and support FilmSpotter development!</p>
+                
+                <div style="background: #2a2a2a; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="margin: 0 0 15px 0; color: #FFA726;">Indie Plan - $5/month</h4>
+                    <ul style="list-style: none; padding: 0; margin: 0;">
+                        <li style="padding: 8px 0; border-bottom: 1px solid #404040;">✓ MIDI Export (DAW Markers)</li>
+                        <li style="padding: 8px 0; border-bottom: 1px solid #404040;">✓ JSON Export (Data)</li>
+                        <li style="padding: 8px 0; border-bottom: 1px solid #404040;">✓ EDL Export (Edit Decision)</li>
+                        <li style="padding: 8px 0;">✓ All Free Features</li>
+                    </ul>
+                </div>
+                
+                <p style="color: #b0b0b0; font-size: 14px; margin-bottom: 20px;">Coming soon! Join the waitlist to be notified when paid plans launch.</p>
+                
+                <button class="btn" onclick="app.joinWaitlist()" style="width: 100%;">Join Waitlist</button>
             </div>
         </div>
     </div>
@@ -1519,6 +1715,8 @@
             },
             
             setupEventListeners() {
+                // Don't setup custom timeline here - wait until video loads
+                
                 // Save username when it changes
                 document.getElementById('userNameInput').addEventListener('change', (e) => {
                     this.userName = e.target.value.trim() || 'Anonymous';
@@ -1592,6 +1790,7 @@
                     if (e.key === 'Enter') {
                         e.preventDefault();
                         this.jumpToFrame(e.target.textContent);
+                        this.syncPlaybackState(); // Sync to other users
                         e.target.contentEditable = 'false';
                         e.target.style.background = '';
                         e.target.style.outline = '';
@@ -1641,16 +1840,219 @@
                         this.nextFrame();
                     } else if (e.code === 'Comma') {
                         // , key = jump back 5 seconds
+                        if (!this.canControl) {
+                            this.showMessage('⛔ You do not have permission to control playback', true);
+                            return;
+                        }
                         this.video.currentTime = Math.max(0, this.video.currentTime - 5);
                         this.syncPlaybackState();
                     } else if (e.code === 'Period') {
                         // . key = jump forward 5 seconds
+                        if (!this.canControl) {
+                            this.showMessage('⛔ You do not have permission to control playback', true);
+                            return;
+                        }
                         this.video.currentTime = Math.min(this.video.duration, this.video.currentTime + 5);
                         this.syncPlaybackState();
                     } else if (e.code === 'KeyM') {
                         this.markHitPoint();
                     }
                 });
+            },
+            
+            setupCustomTimeline() {
+                const track = document.getElementById('timelineTrack');
+                const progress = document.getElementById('timelineProgress');
+                const handle = document.getElementById('timelineHandle');
+                let isDragging = false;
+                
+                if (!track || !progress || !handle) {
+                    console.error('❌ Timeline elements not found');
+                    return;
+                }
+                
+                // Update timeline visuals
+                const updateTimelineUI = () => {
+                    if (!this.video) {
+                        console.log('⚠️ No video element');
+                        return;
+                    }
+                    
+                    // Update current time
+                    const currentDisplay = document.getElementById('currentTimeDisplay');
+                    if (currentDisplay) {
+                        currentDisplay.textContent = this.formatTimecode(this.video.currentTime);
+                    }
+                    
+                    // Update duration and progress bar when duration available
+                    if (this.video.duration && isFinite(this.video.duration)) {
+                        const durationDisplay = document.getElementById('durationDisplay');
+                        if (durationDisplay) {
+                            durationDisplay.textContent = this.formatTimecode(this.video.duration);
+                            durationDisplay.style.opacity = '1'; // Show it once loaded
+                        }
+                        
+                        const percent = (this.video.currentTime / this.video.duration) * 100;
+                        progress.style.width = `${percent}%`;
+                        handle.style.left = `${percent}%`;
+                        console.log(`📊 Timeline: ${percent.toFixed(1)}% (${this.video.currentTime.toFixed(2)}s / ${this.video.duration.toFixed(2)}s)`);
+                    } else {
+                        console.log('⚠️ Duration not ready:', this.video.duration);
+                    }
+                };
+                
+                // Seek to position
+                const seekToPosition = (clientX) => {
+                    if (!this.canControl) {
+                        this.showMessage('⛔ You do not have permission to control playback', true);
+                        return;
+                    }
+                    if (!this.video || !this.video.duration) return;
+                    
+                    const rect = track.getBoundingClientRect();
+                    const percent = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+                    const newTime = percent * this.video.duration;
+                    
+                    this.video.currentTime = newTime;
+                    this.syncPlaybackState();
+                    updateTimelineUI();
+                };
+                
+                // Mouse/touch handlers
+                track.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    seekToPosition(e.clientX);
+                });
+                
+                document.addEventListener('mousemove', (e) => {
+                    if (isDragging) {
+                        seekToPosition(e.clientX);
+                    }
+                });
+                
+                document.addEventListener('mouseup', () => {
+                    isDragging = false;
+                });
+                
+                // Add tooltip on hover
+                const tooltip = document.createElement('div');
+                tooltip.style.cssText = 'position: absolute; bottom: 105%; left: 0; background: rgba(0,0,0,0.9); color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-family: monospace; pointer-events: none; opacity: 0; transition: opacity 0.2s; white-space: nowrap; z-index: 10;';
+                track.appendChild(tooltip);
+                
+                track.addEventListener('mousemove', (e) => {
+                    const rect = track.getBoundingClientRect();
+                    const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                    
+                    if (this.video && this.video.duration && isFinite(this.video.duration)) {
+                        const time = percent * this.video.duration;
+                        const tc = this.formatTimecode(time);
+                        tooltip.textContent = tc;
+                    } else {
+                        // Show percentage if duration not ready
+                        tooltip.textContent = `${(percent * 100).toFixed(0)}%`;
+                    }
+                    
+                    tooltip.style.left = `${percent * 100}%`;
+                    tooltip.style.transform = 'translateX(-50%)';
+                    tooltip.style.opacity = '1';
+                });
+                
+                track.addEventListener('mouseleave', () => {
+                    tooltip.style.opacity = '0';
+                });
+                
+                // Update on video timeupdate
+                this.video.addEventListener('timeupdate', () => {
+                    updateTimelineUI();
+                });
+                
+                this.video.addEventListener('loadedmetadata', () => {
+                    console.log('📹 Metadata loaded - Duration:', this.video.duration);
+                    updateTimelineUI();
+                    this.generateTimelineTicks();
+                    // Update markers when metadata loads
+                    if (this.updateCustomTimelineMarkers) {
+                        this.updateCustomTimelineMarkers();
+                    }
+                });
+                
+                this.video.addEventListener('canplay', () => {
+                    console.log('📹 Video can play');
+                    updateTimelineUI();
+                });
+                
+                // Force initial call after a short delay
+                setTimeout(() => {
+                    console.log('⏱️ Force update timeline');
+                    updateTimelineUI();
+                }, 100);
+                
+                // Check for duration every 500ms for up to 10 seconds
+                let durationCheckCount = 0;
+                const durationCheckInterval = setInterval(() => {
+                    durationCheckCount++;
+                    if (this.video.duration && isFinite(this.video.duration)) {
+                        console.log(`✅ Duration loaded: ${this.video.duration}s`);
+                        updateTimelineUI();
+                        this.generateTimelineTicks();
+                        clearInterval(durationCheckInterval);
+                    } else if (durationCheckCount >= 20) {
+                        console.warn('⚠️ Duration never loaded after 10 seconds');
+                        clearInterval(durationCheckInterval);
+                    }
+                }, 500);
+                
+                // Generate timeline ticks
+                this.generateTimelineTicks = () => {
+                    if (!this.video || !this.video.duration || !isFinite(this.video.duration)) {
+                        console.log('⚠️ Skipping tick generation, duration not ready');
+                        return;
+                    }
+                    
+                    const container = document.getElementById('timelineTicks');
+                    if (!container) return;
+                    container.innerHTML = '';
+                    
+                    const duration = this.video.duration;
+                    console.log(`📏 Generating quarter markers for duration: ${duration}s`);
+                    
+                    // Add simple quarter markers (25%, 50%, 75%)
+                    [0.25, 0.5, 0.75].forEach(fraction => {
+                        const percent = fraction * 100;
+                        const tick = document.createElement('div');
+                        tick.className = 'timeline-tick major';
+                        tick.style.left = `${percent}%`;
+                        container.appendChild(tick);
+                    });
+                };
+                
+                // Update markers on timeline
+                this.updateCustomTimelineMarkers = () => {
+                    if (!this.video || !this.video.duration) return;
+                    
+                    const container = document.getElementById('timelineMarkersContainer');
+                    container.innerHTML = '';
+                    
+                    this.storage.hitPoints.forEach(hp => {
+                        const percent = (hp.time / this.video.duration) * 100;
+                        const dot = document.createElement('div');
+                        dot.className = 'timeline-marker-dot';
+                        dot.style.left = `${percent}%`;
+                        dot.title = `${hp.timecode} - ${hp.note}`;
+                        
+                        // Set color based on department
+                        const deptColors = {
+                            music: '#ffcc00',    // Yellow/Gold
+                            sound: '#00ccff',    // Blue/Cyan
+                            vfx: '#9933ff',      // Purple/Magenta
+                            edit: '#00cc00',     // Green
+                            color: '#ff6600'     // Orange
+                        };
+                        dot.style.background = deptColors[hp.department] || 'white';
+                        
+                        container.appendChild(dot);
+                    });
+                };
             },
             
             async loadSession() {
@@ -2065,6 +2467,9 @@
                     const chatBtnStyle = p.canChat 
                         ? 'background: #0066cc; color: white;' 
                         : 'background: #555; color: #999;';
+                    const controlBtnStyle = p.canControl 
+                        ? 'background: #0066cc; color: white;' 
+                        : 'background: #555; color: #999;';
                     
                     return `
                         <div style="padding: 10px; background: #2d2d2d; border-radius: 4px; margin-bottom: 8px;">
@@ -2074,6 +2479,7 @@
                                         ${p.name}${isMe ? ' (You)' : ''}${hostBadge}
                                     </div>
                                     <div style="font-size: 11px; color: #808080;">
+                                        ${p.canControl ? '✓ Can control' : '✗ No control'} • 
                                         ${p.canMark ? '✓ Can mark' : '✗ View only'} • 
                                         ${p.canChat ? '✓ Can chat' : '✗ Muted'}
                                     </div>
@@ -2081,6 +2487,7 @@
                                 ${showControls ? `
                                     <div style="display: flex; gap: 4px;">
                                         <button onclick="app.makeHost('${p.id}')" style="padding: 4px 8px; font-size: 11px; background: #0066cc; color: white; border: none; border-radius: 3px; cursor: pointer;" title="Make Host">👑</button>
+                                        <button onclick="app.togglePermission('${p.id}', 'control')" style="padding: 4px 8px; font-size: 11px; ${controlBtnStyle} border: none; border-radius: 3px; cursor: pointer;" title="Toggle Playback Control">⏯</button>
                                         <button onclick="app.togglePermission('${p.id}', 'mark')" style="padding: 4px 8px; font-size: 11px; ${markBtnStyle} border: none; border-radius: 3px; cursor: pointer;" title="Toggle Mark Permission">📍</button>
                                         <button onclick="app.togglePermission('${p.id}', 'chat')" style="padding: 4px 8px; font-size: 11px; ${chatBtnStyle} border: none; border-radius: 3px; cursor: pointer;" title="Toggle Chat Permission">💬</button>
                                         <button onclick="app.kickUser('${p.id}')" style="padding: 4px 8px; font-size: 11px; background: #cc0000; color: white; border: none; border-radius: 3px; cursor: pointer;" title="Kick User">✕</button>
@@ -2114,7 +2521,17 @@
                             // Load timecode offset if present
                             if (data.timecodeOffset !== undefined) {
                                 this.timecodeOffset = data.timecodeOffset;
-                                console.log(`✅ Loaded timecode offset: ${data.timecodeOffset}`);
+                                
+                                // Update the UI field
+                                const hours = Math.floor(this.timecodeOffset / 3600);
+                                const minutes = Math.floor((this.timecodeOffset % 3600) / 60);
+                                const seconds = Math.floor(this.timecodeOffset % 60);
+                                const frames = Math.round((this.timecodeOffset % 1) * this.fps);
+                                const offsetTC = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}:${String(frames).padStart(2, '0')}`;
+                                
+                                document.getElementById('timecodeOffset').value = offsetTC;
+                                
+                                console.log(`✅ Loaded timecode offset: ${this.timecodeOffset} (${offsetTC})`);
                             }
                             
                             // Load markers from subcollection
@@ -2145,6 +2562,11 @@
                             await this.refreshHitPoints();
                             await this.refreshChat();
                             
+                            // Update timeline markers
+                            if (this.updateCustomTimelineMarkers) {
+                                this.updateCustomTimelineMarkers();
+                            }
+                            
                             this.showMessage(`✓ Joined session with ${this.storage.hitPoints.length} events`);
                             console.log('✅ Loaded session data from Firebase');
                         } else {
@@ -2168,12 +2590,14 @@
                         const sessionName = document.getElementById('sessionNameInput').value.trim();
                         const passwordEnabled = document.getElementById('enablePassword').checked;
                         const password = passwordEnabled ? document.getElementById('sessionPassword').value : null;
+                        const allowAllControl = document.getElementById('allowAllControl').checked;
                         
                         await this.db.collection('sessions').doc(this.sessionId).set({
                             videoUrl,
                             projectName,
                             sessionName: sessionName || this.sessionId,
                             password: password,
+                            allowAllControl: allowAllControl,
                             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                             lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                         }, { merge: true });
@@ -2274,12 +2698,22 @@
                 } else {
                     // Direct video file
                     this.video.src = finalUrl;
+                    
+                    // Additional download protection
+                    this.video.controlsList = "nodownload";
+                    this.video.disablePictureInPicture = true;
+                    
                     this.video.load();
                     
                     this.video.addEventListener('loadeddata', () => {
                         console.log('Video loaded successfully');
                         this.showMessage('✓ Video loaded successfully! You can now use frame-by-frame controls.');
                         this.showVideoMetadata();
+                        
+                        // Update timeline markers after video loads
+                        if (this.updateCustomTimelineMarkers) {
+                            this.updateCustomTimelineMarkers();
+                        }
                     }, { once: true });
                     
                     this.video.addEventListener('error', (e) => {
@@ -2290,6 +2724,8 @@
                             const alternativeUrl = videoUrl.replace('www.dropbox.com', 'dl.dropboxusercontent.com').replace('dl=0', 'raw=1');
                             console.log('Trying alternative URL:', alternativeUrl);
                             this.video.src = alternativeUrl;
+                            this.video.controlsList = "nodownload";
+                            this.video.disablePictureInPicture = true;
                             this.video.load();
                         }
                     }, { once: true });
@@ -2300,6 +2736,10 @@
                 document.querySelector('.sidebar').style.display = 'flex';
                 document.getElementById('sessionControls').classList.remove('hidden');
                 document.getElementById('headerInfo').classList.remove('hidden');
+                
+                // Setup custom timeline NOW that elements are visible
+                console.log('🎬 Setting up custom timeline...');
+                this.setupCustomTimeline();
                 
                 // Refresh events and chat display after video loads (important for guests)
                 await this.refreshHitPoints();
@@ -2331,6 +2771,22 @@
                     
                     const isFirstParticipant = participantsSnapshot.empty;
                     
+                    // Check session settings for allowAllControl
+                    const sessionDoc = await this.db.collection('sessions').doc(this.sessionId).get();
+                    const allowAllControl = sessionDoc.exists ? sessionDoc.data().allowAllControl : false;
+                    
+                    // Host always gets all permissions
+                    // Guests get permissions based on allowAllControl setting
+                    const permissions = isFirstParticipant ? {
+                        canMark: true,
+                        canChat: true,
+                        canControl: true
+                    } : {
+                        canMark: allowAllControl,
+                        canChat: allowAllControl,
+                        canControl: allowAllControl
+                    };
+                    
                     await this.db.collection('sessions').doc(this.sessionId)
                         .collection('participants').doc(participantId).set({
                             id: participantId,
@@ -2338,18 +2794,16 @@
                             joinedAt: now,
                             lastSeen: now,
                             isHost: isFirstParticipant,
-                            canMark: true,
-                            canChat: true,
-                            canControl: true
+                            ...permissions
                         }, { merge: true });
                     
                     // Store our role locally
                     this.isHost = isFirstParticipant;
-                    this.canMark = true;
-                    this.canChat = true;
-                    this.canControl = true;
+                    this.canMark = permissions.canMark;
+                    this.canChat = permissions.canChat;
+                    this.canControl = permissions.canControl;
                     
-                    console.log(`✅ Registered as participant: ${this.userName} (${participantId}) - Host: ${isFirstParticipant}`);
+                    console.log(`✅ Registered as participant: ${this.userName} (${participantId}) - Host: ${isFirstParticipant}, Permissions:`, permissions);
                     
                     // Clear any existing heartbeat
                     if (this.participantHeartbeat) {
@@ -2367,6 +2821,9 @@
                             console.error('❌ Heartbeat error:', error);
                         }
                     }, 10000);
+                    
+                    // Immediately refresh participants display
+                    await this.refreshParticipants();
                     
                     console.log(`✅ Registered as participant: ${this.userName} (${participantId})`);
                 } catch (error) {
@@ -2551,6 +3008,10 @@
             },
             
             togglePlayPause() {
+                if (!this.canControl) {
+                    this.showMessage('⛔ You do not have permission to control playback', true);
+                    return;
+                }
                 if (this.video.paused) {
                     this.video.play();
                 } else {
@@ -2561,16 +3022,43 @@
             },
             
             skipBack() {
+                if (!this.canControl) {
+                    this.showMessage('⛔ You do not have permission to control playback', true);
+                    return;
+                }
                 this.video.currentTime = Math.max(0, this.video.currentTime - 5);
                 this.syncPlaybackState();
             },
             
             skipForward() {
+                if (!this.canControl) {
+                    this.showMessage('⛔ You do not have permission to control playback', true);
+                    return;
+                }
                 this.video.currentTime = Math.min(this.video.duration, this.video.currentTime + 5);
                 this.syncPlaybackState();
             },
             
+            setVolume(value) {
+                this.video.volume = value / 100;
+            },
+            
+            toggleFullscreen() {
+                const videoContainer = document.querySelector('.video-container');
+                if (!document.fullscreenElement) {
+                    videoContainer.requestFullscreen().catch(err => {
+                        console.error('Error attempting fullscreen:', err);
+                    });
+                } else {
+                    document.exitFullscreen();
+                }
+            },
+            
             previousFrame() {
+                if (!this.canControl) {
+                    this.showMessage('⛔ You do not have permission to control playback', true);
+                    return;
+                }
                 console.log('⏮️ Previous frame');
                 this.video.pause();
                 const frameDuration = 1 / this.fps;
@@ -2580,6 +3068,10 @@
             },
             
             nextFrame() {
+                if (!this.canControl) {
+                    this.showMessage('⛔ You do not have permission to control playback', true);
+                    return;
+                }
                 console.log('⏭️ Next frame');
                 this.video.pause();
                 const frameDuration = 1 / this.fps;
@@ -3174,6 +3666,11 @@
                 }
                 
                 this.updateTimelineMarkers();
+                
+                // Update custom timeline markers
+                if (this.updateCustomTimelineMarkers) {
+                    this.updateCustomTimelineMarkers();
+                }
             },
             
             jumpToHitPoint(time) {
@@ -3572,6 +4069,72 @@
                 document.getElementById('exportModal').classList.add('hidden');
             },
             
+            showUpgradeModal() {
+                document.getElementById('exportModal').classList.add('hidden');
+                document.getElementById('upgradeModal').classList.remove('hidden');
+            },
+            
+            closeUpgradeModal() {
+                document.getElementById('upgradeModal').classList.add('hidden');
+            },
+            
+            joinWaitlist() {
+                // For now, just show a message
+                // Later this will integrate with email capture
+                alert('Thank you for your interest! We\'ll notify you when paid plans launch.\n\nFor now, reach out to support@filmspotter.app to get early access.');
+                this.closeUpgradeModal();
+            },
+            
+            createNewSession() {
+                if (confirm('Start a new session? This will clear current session data and generate a new session ID.')) {
+                    // Clear old listeners FIRST
+                    if (this.unsubscribeListeners) {
+                        this.unsubscribeListeners.forEach(unsub => unsub());
+                        this.unsubscribeListeners = [];
+                    }
+                    
+                    // Clear heartbeat
+                    if (this.participantHeartbeat) {
+                        clearInterval(this.participantHeartbeat);
+                    }
+                    
+                    // Generate new random session ID
+                    const newSessionId = 'session-' + Math.random().toString(36).substr(2, 9);
+                    this.sessionId = newSessionId;
+                    localStorage.setItem('film-spotter-session-id', newSessionId);
+                    
+                    // Clear form fields
+                    document.getElementById('userNameInput').value = this.userName;
+                    document.getElementById('sessionNameInput').value = '';
+                    document.getElementById('videoUrlInput').value = '';
+                    document.getElementById('projectNameInput').value = '';
+                    document.getElementById('sessionPassword').value = '';
+                    document.getElementById('enablePassword').checked = false;
+                    document.getElementById('sessionPassword').classList.add('hidden');
+                    
+                    // Update preview
+                    document.getElementById('sessionIdDisplay').textContent = newSessionId;
+                    document.getElementById('copyLinkBtn').style.display = 'none';
+                    
+                    // Clear local storage for this session
+                    localStorage.removeItem('film-spotter-hitpoints-' + newSessionId);
+                    localStorage.removeItem('film-spotter-chat-' + newSessionId);
+                    
+                    // Clear in-memory data
+                    this.storage.hitPoints = [];
+                    this.storage.chatMessages = [];
+                    
+                    // Re-setup Firebase listeners for NEW session
+                    if (this.db) {
+                        this.setupFirebaseListeners();
+                        console.log(`✅ Firebase reconnected to new session: ${newSessionId}`);
+                    }
+                    
+                    this.showMessage('✓ New session created: ' + newSessionId);
+                    console.log('🆕 Created new session:', newSessionId);
+                }
+            },
+            
             async confirmExport() {
                 const exportCSV = document.getElementById('exportCSV').checked;
                 const exportJSON = document.getElementById('exportJSON').checked;
@@ -3888,7 +4451,21 @@
                     if (!participantDoc.exists) return;
                     
                     const participantData = participantDoc.data();
-                    const permField = permission === 'mark' ? 'canMark' : 'canChat';
+                    
+                    // Map permission type to field name
+                    let permField;
+                    let permName;
+                    if (permission === 'mark') {
+                        permField = 'canMark';
+                        permName = 'marking';
+                    } else if (permission === 'chat') {
+                        permField = 'canChat';
+                        permName = 'chat';
+                    } else if (permission === 'control') {
+                        permField = 'canControl';
+                        permName = 'playback control';
+                    }
+                    
                     const newValue = !participantData[permField];
                     
                     await this.db.collection('sessions').doc(this.sessionId)
@@ -3897,7 +4474,6 @@
                         });
                     
                     const action = newValue ? 'enabled' : 'disabled';
-                    const permName = permission === 'mark' ? 'marking' : 'chat';
                     this.showMessage(`✓ ${permName} ${action} for ${participantData.name}`);
                 } catch (error) {
                     console.error('Error toggling permission:', error);
