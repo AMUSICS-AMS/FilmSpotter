@@ -711,89 +711,115 @@
             <div>
                 <h1>FilmSpotter</h1>
             </div>
-            <div class="header-info">
+            <div class="header-info hidden" id="headerInfo">
                 <span class="user-badge" id="userBadge">User</span>
                 <span id="sessionNameDisplay" style="color: #b0b0b0; font-size: 12px; margin: 0 10px;">Session</span>
-                <button class="btn btn-secondary" onclick="app.copySessionLink()" style="padding: 4px 8px; font-size: 11px;">📋 Copy Link</button>
+                <button class="btn btn-secondary" onclick="app.copySessionLink()" style="padding: 4px 8px; font-size: 11px;">Copy Session Link</button>
                 <span id="activeUsers" style="color: #b0b0b0; font-size: 12px; cursor: pointer; margin-left: 10px;" title="Click to manage participants" onclick="app.toggleParticipantsPanel()">👥 0 users</span>
                 <span id="connectionStatus">●</span>
             </div>
-            <div class="header-controls">
+            <div class="header-controls hidden" id="sessionControls">
                 <label style="display: flex; align-items: center; gap: 6px; color: #b0b0b0; font-size: 12px; margin-right: 10px;">
                     <input type="checkbox" id="exportFiltered" checked>
                     Export filtered only
                 </label>
                 <button class="btn btn-secondary" onclick="app.exportData()">Export Events</button>
-                <button class="btn btn-danger" onclick="app.clearSession()">Clear Session</button>
+                <button class="btn btn-danger" onclick="app.leaveSession()">Leave Session</button>
             </div>
         </div>
         
         <div class="main-content">
             <div class="video-section">
                 <div id="videoSetup" class="video-setup">
-                    <h2>Setup FilmSpotter Session</h2>
-                    
-                    <div class="form-group">
-                        <label>Your Name</label>
-                        <input type="text" id="userNameInput" placeholder="Enter your name" />
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Session Name</label>
-                        <input type="text" id="sessionNameInput" placeholder="e.g., The Last Stand - Music Spotting" />
-                        <p style="font-size: 11px; color: #808080; margin-top: 4px;">Give this session a memorable name so you and your team can find it easily</p>
-                    </div>
-                    
-                    <div class="session-info">
-                        <h3>📋 Session ID</h3>
-                        <p>This will be generated from your session name. Share the link below with your team:</p>
-                        <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
-                            <div class="session-id" id="sessionIdDisplay" style="flex: 1;">Enter session name above</div>
-                            <button class="btn btn-secondary" onclick="app.copySessionLink()" id="copyLinkBtn" style="display: none;">📋 Copy Link</button>
-                        </div>
-                    </div>
-                    
-                    <div id="recentSessions" class="recent-sessions hidden">
-                        <h3>Recent Sessions</h3>
-                        <div id="recentSessionsList"></div>
-                    </div>
-                    
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <label style="display: inline-flex !important; align-items: center; gap: 8px; cursor: pointer; color: #e0e0e0; font-size: 13px; margin-bottom: 0 !important;">
-                            <input type="checkbox" id="enablePassword" onchange="app.togglePasswordField()" style="width: auto; margin: 0;">
-                            <span>Require password to join (optional)</span>
-                        </label>
-                        <input type="password" id="sessionPassword" placeholder="Enter session password" class="hidden" style="margin-top: 8px; width: 100%;">
-                    </div>
-                    
-                    <div class="form-group" style="margin-bottom: 15px;">
-                        <label style="display: inline-flex !important; align-items: center; gap: 8px; cursor: pointer; color: #e0e0e0; font-size: 13px; margin-bottom: 0 !important;">
-                            <input type="checkbox" id="allowAllControl" checked style="width: auto; margin: 0;">
-                            <span>Allow all participants to control and mark</span>
-                        </label>
-                        <p style="font-size: 11px; color: #808080; margin: 4px 0 0 26px;">If unchecked, only host and co-hosts can control the session</p>
-                    </div>
-                    
-                    <div class="help-text">
-                        <h3>Getting Started</h3>
+                    <!-- Guest Join Screen (shown when ?session= in URL) -->
+                    <div id="guestJoinScreen" class="hidden">
+                        <h2>Welcome to FilmSpotter</h2>
+                        <p style="color: #b0b0b0; margin-bottom: 30px;">Join the collaborative session</p>
                         
-                        <p><strong>🎯 RECOMMENDED: Dropbox (Best for Frame-by-Frame)</strong></p>
-                        <p>1. Upload your video to Dropbox</p>
-                        <p>2. Right-click → Share → Copy link</p>
-                        <p>3. Paste the ENTIRE link here (tool will convert it automatically)</p>
-                        <p>4. Click Load Video</p>
-                        <p><em>Example: https://www.dropbox.com/s/abc123/video.mp4?dl=0</em></p>
+                        <div class="form-group">
+                            <label>Project Name</label>
+                            <input type="text" id="guestProjectName" placeholder="Loading..." readonly style="background: #1a1a1a; cursor: default;" />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Session Name</label>
+                            <input type="text" id="guestSessionName" placeholder="Loading..." readonly style="background: #1a1a1a; cursor: default;" />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Your Name</label>
+                            <input type="text" id="guestUserName" placeholder="Enter your name" autofocus />
+                        </div>
+                        
+                        <button class="btn" onclick="app.joinAsGuest()">Join Session</button>
                     </div>
                     
-                    <div class="form-group">
-                        <label>Video URL (Dropbox recommended)</label>
-                        <input type="text" id="videoUrlInput" placeholder="https://www.dropbox.com/s/..." />
+                    <!-- Host Setup Screen (shown when no ?session= in URL) -->
+                    <div id="hostSetupScreen">
+                        <h2>Setup FilmSpotter Session</h2>
+                        
+                        <div class="form-group">
+                            <label>Your Name</label>
+                            <input type="text" id="userNameInput" placeholder="Enter your name" />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Session Name</label>
+                            <input type="text" id="sessionNameInput" placeholder="e.g., The Last Stand - Music Spotting" />
+                            <p style="font-size: 11px; color: #808080; margin-top: 4px;">Give this session a memorable name so you and your team can find it easily</p>
+                        </div>
+                        
+                        <div class="session-info">
+                            <h3>📋 Session ID</h3>
+                            <p>This will be generated from your session name. Share the link below with your team:</p>
+                            <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px;">
+                                <div class="session-id" id="sessionIdDisplay" style="flex: 1;">Enter session name above</div>
+                                <button class="btn btn-secondary" onclick="app.copySessionLink()" id="copyLinkBtn" style="display: none;">📋 Copy Link</button>
+                            </div>
+                        </div>
+                        
+                        <div id="recentSessions" class="recent-sessions hidden">
+                            <h3>Recent Sessions</h3>
+                            <div id="recentSessionsList"></div>
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label style="display: inline-flex !important; align-items: center; gap: 8px; cursor: pointer; color: #e0e0e0; font-size: 13px; margin-bottom: 0 !important;">
+                                <input type="checkbox" id="enablePassword" onchange="app.togglePasswordField()" style="width: auto; margin: 0;">
+                                <span>Require password to join (optional)</span>
+                            </label>
+                            <input type="password" id="sessionPassword" placeholder="Enter session password" class="hidden" style="margin-top: 8px; width: 100%;">
+                        </div>
+                        
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label style="display: inline-flex !important; align-items: center; gap: 8px; cursor: pointer; color: #e0e0e0; font-size: 13px; margin-bottom: 0 !important;">
+                                <input type="checkbox" id="allowAllControl" checked style="width: auto; margin: 0;">
+                                <span>Allow all participants to control and mark</span>
+                            </label>
+                            <p style="font-size: 11px; color: #808080; margin: 4px 0 0 26px;">If unchecked, only host and co-hosts can control the session</p>
+                        </div>
+                        
+                        <div class="help-text">
+                            <h3>Getting Started</h3>
+                            
+                            <p><strong>🎯 RECOMMENDED: Dropbox (Best for Frame-by-Frame)</strong></p>
+                            <p>1. Upload your video to Dropbox</p>
+                            <p>2. Right-click → Share → Copy link</p>
+                            <p>3. Paste the ENTIRE link here (tool will convert it automatically)</p>
+                            <p>4. Click Load Video</p>
+                            <p><em>Example: https://www.dropbox.com/s/abc123/video.mp4?dl=0</em></p>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Video URL (Dropbox recommended)</label>
+                            <input type="text" id="videoUrlInput" placeholder="https://www.dropbox.com/s/..." />
+                        </div>
+                        <div class="form-group">
+                            <label>Project Name</label>
+                            <input type="text" id="projectNameInput" placeholder="My Film Project" />
+                        </div>
+                        <button class="btn" onclick="app.loadVideo()">Load Video</button>
                     </div>
-                    <div class="form-group">
-                        <label>Project Name</label>
-                        <input type="text" id="projectNameInput" placeholder="My Film Project" />
-                    </div>
-                    <button class="btn" onclick="app.loadVideo()">Load Video</button>
                 </div>
                 
                 <div id="videoPlayer" class="hidden">
@@ -1082,12 +1108,54 @@
             </div>
         </div>
     </div>
+    
+    <!-- Leave Session Modal -->
+    <div id="leaveSessionModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3>Leave Session</h3>
+                <button class="close-btn" onclick="app.closeLeaveSessionModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 20px; color: #e0e0e0;">You are the host of this session. Choose an option:</p>
+                <button class="btn btn-danger" onclick="app.endSessionForAll()" style="width: 100%; margin-bottom: 10px; padding: 12px;">
+                    End Session For Everyone
+                    <div style="font-size: 11px; color: #ffcccc; margin-top: 4px;">Deletes all markers, chat, and session data</div>
+                </button>
+                <button class="btn btn-secondary" onclick="app.leaveAndTransferHost()" style="width: 100%; margin-bottom: 10px; padding: 12px;">
+                    Leave & Transfer Host
+                    <div style="font-size: 11px; color: #cccccc; margin-top: 4px;">Session continues, next person becomes host</div>
+                </button>
+                <button class="btn" onclick="app.closeLeaveSessionModal()" style="width: 100%; padding: 12px;">
+                    Cancel (Stay in Session)
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Guest Leave Confirmation Modal -->
+    <div id="guestLeaveModal" class="modal hidden">
+        <div class="modal-content" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3>Leave Session</h3>
+                <button class="close-btn" onclick="app.closeGuestLeaveModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom: 20px; color: #e0e0e0;">Are you sure you want to leave this session?</p>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-danger" onclick="app.confirmLeaveAsGuest()" style="flex: 1;">Leave Session</button>
+                    <button class="btn btn-secondary" onclick="app.closeGuestLeaveModal()" style="flex: 1;">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script>
         const app = {
             fps: 23.976,
             video: null,
             sessionId: null,
+            sessionName: '', // Friendly display name
             userName: 'Anonymous',
             updateInterval: null,
             detectedFPS: null,
@@ -1099,12 +1167,17 @@
             activeFilters: ['global'], // Array of active department filters
             editingEventId: null, // ID of event being edited
             isHost: false, // Is current user the host
+            canMark: true, // Can this user mark events
+            canChat: true, // Can this user send chat messages
+            canControl: true, // Can this user control playback
             sessionPassword: null, // Session password if set
             allowAllControl: true, // Whether all users can control
             userRole: 'viewer', // current user's role: 'host', 'co-host', 'viewer'
             currentHighlightedEventId: null, // Track currently highlighted event to prevent flashing
             lastHighlightUpdate: 0, // Timestamp of last highlight update for throttling
             followEvents: false, // Whether to auto-scroll to current event
+            userColorMap: {}, // Map of username -> color
+            nextColorIndex: 0, // Next color to assign
             
             // Firebase configuration
             firebaseConfig: {
@@ -1197,34 +1270,45 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 const urlSessionId = urlParams.get('session');
                 
-                if (urlSessionId) {
+                // Determine if this is a guest joining via link
+                const isGuest = !!urlSessionId;
+                
+                if (isGuest) {
+                    // Show guest screen, hide host screen
+                    document.getElementById('guestJoinScreen').classList.remove('hidden');
+                    document.getElementById('hostSetupScreen').classList.add('hidden');
+                    
                     // Join session from URL
                     this.sessionId = urlSessionId;
                     localStorage.setItem('film-spotter-session-id', urlSessionId);
+                    
+                    // Load session data and populate guest fields
+                    if (this.db) {
+                        await this.loadSessionDataForGuest(urlSessionId);
+                    }
                 } else {
+                    // Show host screen, hide guest screen
+                    document.getElementById('guestJoinScreen').classList.add('hidden');
+                    document.getElementById('hostSetupScreen').classList.remove('hidden');
+                    
                     // Get or create session
                     this.sessionId = this.getOrCreateSessionId();
+                    
+                    document.getElementById('sessionIdDisplay').textContent = this.sessionId;
+                    
+                    // Show recent sessions on setup screen
+                    this.showRecentSessions();
+                    
+                    // Add session name input listener
+                    document.getElementById('sessionNameInput').addEventListener('input', (e) => {
+                        this.updateSessionIdPreview(e.target.value);
+                    });
                 }
                 
                 // Set up Firebase real-time listeners NOW (with sessionId set)
                 if (this.db && this.sessionId) {
                     this.setupFirebaseListeners();
                 }
-                
-                // THEN load initial session data from Firebase
-                if (urlSessionId && this.db) {
-                    await this.loadSessionFromFirebase(urlSessionId);
-                }
-                
-                document.getElementById('sessionIdDisplay').textContent = this.sessionId;
-                
-                // Show recent sessions on setup screen
-                this.showRecentSessions();
-                
-                // Add session name input listener
-                document.getElementById('sessionNameInput').addEventListener('input', (e) => {
-                    this.updateSessionIdPreview(e.target.value);
-                });
                 
                 // Initialize department selector to Global by default
                 document.getElementById('departmentSelect').value = 'global';
@@ -1233,8 +1317,84 @@
                 
                 this.setupEventListeners();
                 await this.loadUserName();
-                await this.loadSession();
+                if (!isGuest) {
+                    await this.loadSession();
+                }
                 this.startUpdateLoop();
+            },
+            
+            async loadSessionDataForGuest(sessionId) {
+                try {
+                    const sessionRef = this.db.collection('sessions').doc(sessionId);
+                    const doc = await sessionRef.get();
+                    
+                    if (doc.exists) {
+                        const data = doc.data();
+                        
+                        // Populate guest fields
+                        document.getElementById('guestSessionName').value = data.sessionName || sessionId;
+                        document.getElementById('guestProjectName').value = data.projectName || 'Untitled Project';
+                        
+                        console.log('✅ Loaded session data for guest');
+                    } else {
+                        document.getElementById('guestSessionName').value = sessionId;
+                        document.getElementById('guestProjectName').value = 'Session not found';
+                        console.log('i️ Session exists but has no metadata yet');
+                    }
+                } catch (error) {
+                    console.error('❌ Error loading session data:', error);
+                    document.getElementById('guestSessionName').value = sessionId;
+                    document.getElementById('guestProjectName').value = 'Error loading session';
+                }
+            },
+            
+            async joinAsGuest() {
+                const userName = document.getElementById('guestUserName').value.trim();
+                
+                if (!userName) {
+                    alert('Please enter your name');
+                    return;
+                }
+                
+                this.userName = userName;
+                localStorage.setItem('film-spotter-username', userName);
+                
+                // Load the session data from Firebase to check password
+                try {
+                    const sessionRef = this.db.collection('sessions').doc(this.sessionId);
+                    const doc = await sessionRef.get();
+                    
+                    if (doc.exists) {
+                        const data = doc.data();
+                        
+                        // Check if session has password
+                        if (data.password) {
+                            const enteredPassword = prompt('This session is password protected. Enter password:');
+                            if (enteredPassword !== data.password) {
+                                alert('Incorrect password. Access denied.');
+                                return;
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error checking password:', error);
+                }
+                
+                // Load the session data from Firebase
+                await this.loadSessionFromFirebase(this.sessionId);
+                
+                // Check if video URL was loaded
+                const videoUrl = document.getElementById('videoUrlInput').value;
+                const projectName = document.getElementById('projectNameInput').value;
+                
+                if (videoUrl && projectName) {
+                    // Trigger the actual video loading
+                    await this.loadVideo();
+                } else {
+                    this.showMessage('⚠️ Session has no video loaded yet. Waiting for host to start...', true);
+                }
+                
+                console.log(`👤 Joined as guest: ${userName}`);
             },
             
             getOrCreateSessionId() {
@@ -1251,15 +1411,9 @@
                 const copyBtn = document.getElementById('copyLinkBtn');
                 
                 if (sessionName.trim()) {
-                    // Convert session name to URL-friendly ID
-                    const sessionId = sessionName.toLowerCase()
-                        .replace(/[^a-z0-9]+/g, '-')
-                        .replace(/^-+|-+$/g, '');
-                    
-                    sessionIdInput.textContent = sessionId || 'Enter a valid session name';
-                    copyBtn.style.display = sessionId ? 'inline-block' : 'none';
-                    // DON'T set this.sessionId here - only preview it!
-                    // It will be set properly in loadVideo() when listeners are updated
+                    // Show the actual random session ID, not a converted name
+                    sessionIdInput.textContent = this.sessionId;
+                    copyBtn.style.display = 'inline-block';
                 } else {
                     sessionIdInput.textContent = 'Enter session name above';
                     copyBtn.style.display = 'none';
@@ -1267,23 +1421,8 @@
             },
             
             copySessionLink() {
-                // Check if user has entered a session name but hasn't loaded video yet
-                const sessionNameInput = document.getElementById('sessionNameInput');
-                const sessionName = sessionNameInput ? sessionNameInput.value.trim() : '';
-                
-                let sessionIdToUse = this.sessionId;
-                
-                if (sessionName) {
-                    // Convert session name to ID (same logic as loadVideo)
-                    const convertedId = sessionName.toLowerCase()
-                        .replace(/[^a-z0-9]+/g, '-')
-                        .replace(/^-+|-+$/g, '');
-                    
-                    if (convertedId) {
-                        sessionIdToUse = convertedId;
-                        console.log(`📋 Using session name "${sessionName}" → ID: ${convertedId}`);
-                    }
-                }
+                // Always use the random session ID in the URL
+                const sessionIdToUse = this.sessionId;
                 
                 const baseUrl = window.location.href.split('?')[0];
                 const sessionLink = `${baseUrl}?session=${sessionIdToUse}`;
@@ -1297,7 +1436,7 @@
                     if (baseUrl.includes('file://') && (baseUrl.match(/_\d+\.html/) || baseUrl.match(/\(\d+\)\.html/))) {
                         this.showMessage(`⚠️ Link copied, but filename has version number. Guest must have same file!`);
                     } else {
-                        this.showMessage(`✓ Session link copied: ${sessionIdToUse}`);
+                        this.showMessage(`✓ Session link copied`);
                     }
                 }).catch(() => {
                     // Fallback for older browsers
@@ -1830,9 +1969,21 @@
                 const participantsUnsubscribe = sessionRef.collection('participants').onSnapshot((snapshot) => {
                     const participants = [];
                     const now = Date.now();
+                    let foundMyself = false;
                     
                     snapshot.forEach(doc => {
                         const data = doc.data();
+                        
+                        // Check if this is us
+                        if (data.id === this.myParticipantId) {
+                            foundMyself = true;
+                            // Update our own permissions
+                            this.isHost = data.isHost || false;
+                            this.canMark = data.canMark !== false;
+                            this.canChat = data.canChat !== false;
+                            this.canControl = data.canControl !== false;
+                            console.log(`🔐 My permissions updated: isHost=${this.isHost}, canMark=${this.canMark}, canChat=${this.canChat}`);
+                        }
                         
                         // Handle lastSeen timestamp (now using client Date.now())
                         const lastSeenTime = data.lastSeen || 0;
@@ -1853,6 +2004,18 @@
                             console.log(`⏰ ${data.name} inactive: ${Math.round(timeSinceLastSeen/1000)}s ago`);
                         }
                     });
+                    
+                    // Check if we've been kicked (not in participant list anymore)
+                    if (this.myParticipantId && !foundMyself && this.participantUpdateCount > 2) {
+                        alert('You have been removed from this session by the host.');
+                        // Clear heartbeat
+                        if (this.participantHeartbeat) {
+                            clearInterval(this.participantHeartbeat);
+                        }
+                        // Reload page to reset
+                        setTimeout(() => location.reload(), 1000);
+                        return;
+                    }
                     
                     // Update participant count in header
                     const activeCount = participants.length;
@@ -1890,16 +2053,43 @@
                     return;
                 }
                 
-                panel.innerHTML = participants.map(p => `
-                    <div style="padding: 10px; background: #2d2d2d; border-radius: 4px; margin-bottom: 8px;">
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <div style="font-weight: bold; color: #e0e0e0;">${p.name}</div>
-                                <div style="font-size: 11px; color: #808080;">Active now</div>
+                panel.innerHTML = participants.map(p => {
+                    const isMe = p.id === this.myParticipantId;
+                    const showControls = this.isHost && !isMe;
+                    const hostBadge = p.isHost ? '<span style="background: #0066cc; color: white; padding: 2px 6px; border-radius: 3px; font-size: 10px; margin-left: 6px;">HOST</span>' : '';
+                    
+                    // Button styles based on permission state
+                    const markBtnStyle = p.canMark 
+                        ? 'background: #0066cc; color: white;' 
+                        : 'background: #555; color: #999;';
+                    const chatBtnStyle = p.canChat 
+                        ? 'background: #0066cc; color: white;' 
+                        : 'background: #555; color: #999;';
+                    
+                    return `
+                        <div style="padding: 10px; background: #2d2d2d; border-radius: 4px; margin-bottom: 8px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: bold; color: #e0e0e0;">
+                                        ${p.name}${isMe ? ' (You)' : ''}${hostBadge}
+                                    </div>
+                                    <div style="font-size: 11px; color: #808080;">
+                                        ${p.canMark ? '✓ Can mark' : '✗ View only'} • 
+                                        ${p.canChat ? '✓ Can chat' : '✗ Muted'}
+                                    </div>
+                                </div>
+                                ${showControls ? `
+                                    <div style="display: flex; gap: 4px;">
+                                        <button onclick="app.makeHost('${p.id}')" style="padding: 4px 8px; font-size: 11px; background: #0066cc; color: white; border: none; border-radius: 3px; cursor: pointer;" title="Make Host">👑</button>
+                                        <button onclick="app.togglePermission('${p.id}', 'mark')" style="padding: 4px 8px; font-size: 11px; ${markBtnStyle} border: none; border-radius: 3px; cursor: pointer;" title="Toggle Mark Permission">📍</button>
+                                        <button onclick="app.togglePermission('${p.id}', 'chat')" style="padding: 4px 8px; font-size: 11px; ${chatBtnStyle} border: none; border-radius: 3px; cursor: pointer;" title="Toggle Chat Permission">💬</button>
+                                        <button onclick="app.kickUser('${p.id}')" style="padding: 4px 8px; font-size: 11px; background: #cc0000; color: white; border: none; border-radius: 3px; cursor: pointer;" title="Kick User">✕</button>
+                                    </div>
+                                ` : ''}
                             </div>
                         </div>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             },
             
             async loadSessionFromFirebase(sessionId) {
@@ -1976,15 +2166,19 @@
                 if (this.db && this.sessionId) {
                     try {
                         const sessionName = document.getElementById('sessionNameInput').value.trim();
+                        const passwordEnabled = document.getElementById('enablePassword').checked;
+                        const password = passwordEnabled ? document.getElementById('sessionPassword').value : null;
+                        
                         await this.db.collection('sessions').doc(this.sessionId).set({
                             videoUrl,
                             projectName,
                             sessionName: sessionName || this.sessionId,
+                            password: password,
                             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                             lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                         }, { merge: true });
                         
-                        console.log('✅ Session metadata saved to Firebase');
+                        console.log('✅ Session metadata saved to Firebase' + (password ? ' (password protected)' : ''));
                     } catch (error) {
                         console.error('❌ Error saving session to Firebase:', error);
                     }
@@ -2006,46 +2200,16 @@
                         document.getElementById('userBadge').textContent = userName;
                     }
                     
-                    // Update session ID from session name if provided
-                    let newSessionId = null;
+                    // Store session name (friendly display name)
+                    // But keep the existing random session ID
                     if (sessionName) {
-                        newSessionId = sessionName.toLowerCase()
-                            .replace(/[^a-z0-9]+/g, '-')
-                            .replace(/^-+|-+$/g, '');
-                        
-                        console.log(`🔍 Session comparison:`, {
-                            sessionName,
-                            newSessionId,
-                            currentSessionId: this.sessionId,
-                            areEqual: newSessionId === this.sessionId,
-                            willSwitch: newSessionId && newSessionId !== this.sessionId
-                        });
-                        
-                        if (newSessionId && newSessionId !== this.sessionId) {
-                            // Session ID changed - need to update listeners
-                            console.log(`📌 Switching from session ${this.sessionId} to ${newSessionId}`);
-                            
-                            // Clear old listeners
-                            this.unsubscribeListeners.forEach(unsub => unsub());
-                            this.unsubscribeListeners = [];
-                            
-                            // Update session ID
-                            this.sessionId = newSessionId;
-                            localStorage.setItem('film-spotter-session-id', newSessionId);
-                            this.saveSessionToRecents(newSessionId, sessionName);
-                            
-                            // Set up new listeners for new session
-                            if (this.db) {
-                                this.setupFirebaseListeners();
-                                console.log(`✅ Firebase listeners updated for session: ${newSessionId}`);
-                            }
-                        } else {
-                            console.log(`ℹ️ Session already set to ${this.sessionId}, no switch needed`);
-                        }
+                        console.log(`📝 Session name: "${sessionName}" (ID: ${this.sessionId})`);
+                        this.sessionName = sessionName;
+                        this.saveSessionToRecents(this.sessionId, sessionName);
                     }
                     
-                    // Update header with session name AND ID
-                    const displayText = sessionName ? `${sessionName} (${this.sessionId})` : this.sessionId;
+                    // Update header with session name only
+                    const displayText = sessionName || this.sessionId;
                     document.getElementById('sessionNameDisplay').textContent = displayText;
                     console.log(`📌 Active session: ${this.sessionId}`);
                     
@@ -2134,6 +2298,8 @@
                 document.getElementById('videoSetup').classList.add('hidden');
                 document.getElementById('videoPlayer').classList.remove('hidden');
                 document.querySelector('.sidebar').style.display = 'flex';
+                document.getElementById('sessionControls').classList.remove('hidden');
+                document.getElementById('headerInfo').classList.remove('hidden');
                 
                 // Refresh events and chat display after video loads (important for guests)
                 await this.refreshHitPoints();
@@ -2158,15 +2324,32 @@
                 
                 try {
                     const now = Date.now();
+                    
+                    // Check if this is the first participant (they become host)
+                    const participantsSnapshot = await this.db.collection('sessions').doc(this.sessionId)
+                        .collection('participants').get();
+                    
+                    const isFirstParticipant = participantsSnapshot.empty;
+                    
                     await this.db.collection('sessions').doc(this.sessionId)
                         .collection('participants').doc(participantId).set({
                             id: participantId,
                             name: this.userName,
                             joinedAt: now,
-                            lastSeen: now
+                            lastSeen: now,
+                            isHost: isFirstParticipant,
+                            canMark: true,
+                            canChat: true,
+                            canControl: true
                         }, { merge: true });
                     
-                    console.log(`✅ Registered as participant: ${this.userName} (${participantId})`);
+                    // Store our role locally
+                    this.isHost = isFirstParticipant;
+                    this.canMark = true;
+                    this.canChat = true;
+                    this.canControl = true;
+                    
+                    console.log(`✅ Registered as participant: ${this.userName} (${participantId}) - Host: ${isFirstParticipant}`);
                     
                     // Clear any existing heartbeat
                     if (this.participantHeartbeat) {
@@ -2833,6 +3016,12 @@
             },
             
             async markHitPoint() {
+                // Check permission
+                if (!this.canMark) {
+                    this.showMessage('⛔ You do not have permission to mark events', true);
+                    return;
+                }
+                
                 const note = document.getElementById('hitPointNote').value.trim();
                 const time = this.video.currentTime;
                 const markerType = document.getElementById('markerType').value;
@@ -3253,6 +3442,12 @@
             },
             
             async sendChat() {
+                // Check permission
+                if (!this.canChat) {
+                    this.showMessage('⛔ You do not have permission to send messages', true);
+                    return;
+                }
+                
                 const input = document.getElementById('chatInput');
                 const message = input.value.trim();
                 
@@ -3297,17 +3492,41 @@
             },
             
             getUserColor(username) {
-                // Generate consistent color for each user based on their name
-                let hash = 0;
-                for (let i = 0; i < username.length; i++) {
-                    hash = username.charCodeAt(i) + ((hash << 5) - hash);
+                // Assign colors based on participant order to prevent collisions
+                // Store color assignments in memory
+                if (!this.userColorMap) {
+                    this.userColorMap = {};
+                    this.nextColorIndex = 0;
                 }
                 
-                // Use hue rotation for distinct colors
-                const hues = [210, 270, 30, 330, 120, 180, 300, 60]; // Blue, purple, orange, pink, green, cyan, magenta, yellow
-                const hue = hues[Math.abs(hash) % hues.length];
+                // If user already has a color, return it
+                if (this.userColorMap[username]) {
+                    return this.userColorMap[username];
+                }
                 
-                return `hsl(${hue}, 70%, 60%)`;
+                // Assign next color in sequence
+                const colors = [
+                    'hsl(210, 70%, 60%)', // Blue
+                    'hsl(30, 70%, 60%)',  // Orange
+                    'hsl(120, 70%, 60%)', // Green
+                    'hsl(330, 70%, 60%)', // Pink
+                    'hsl(270, 70%, 60%)', // Purple
+                    'hsl(180, 70%, 60%)', // Cyan
+                    'hsl(60, 70%, 60%)',  // Yellow
+                    'hsl(300, 70%, 60%)', // Magenta
+                    'hsl(15, 70%, 60%)',  // Red-orange
+                    'hsl(240, 70%, 60%)', // Blue-purple
+                    'hsl(150, 70%, 60%)', // Green-cyan
+                    'hsl(345, 70%, 60%)', // Red-pink
+                ];
+                
+                const color = colors[this.nextColorIndex % colors.length];
+                this.userColorMap[username] = color;
+                this.nextColorIndex++;
+                
+                console.log(`🎨 Assigned ${username} → ${color}`);
+                
+                return color;
             },
             
             async refreshChat() {
@@ -3621,40 +3840,223 @@
                 URL.revokeObjectURL(url);
             },
             
-            async clearSession() {
-                if (!confirm('Are you sure you want to clear this session? This will delete all hit points and chat messages.')) {
+            async makeHost(participantId) {
+                if (!this.isHost) {
+                    alert('Only the host can transfer host status');
                     return;
                 }
                 
-                // Clear local storage
-                this.storage.hitPoints = [];
-                this.storage.chatMessages = [];
-                localStorage.removeItem('film-spotter-hitpoints-' + this.sessionId);
-                localStorage.removeItem('film-spotter-chat-' + this.sessionId);
-                
-                // Clear Firebase for this session
-                if (this.db && this.sessionId) {
-                    try {
-                        // Delete all markers
-                        const markersSnapshot = await this.db.collection('sessions').doc(this.sessionId)
-                            .collection('markers').get();
-                        const markerDeletes = markersSnapshot.docs.map(doc => doc.ref.delete());
-                        await Promise.all(markerDeletes);
-                        
-                        // Delete all chat
-                        const chatSnapshot = await this.db.collection('sessions').doc(this.sessionId)
-                            .collection('chat').get();
-                        const chatDeletes = chatSnapshot.docs.map(doc => doc.ref.delete());
-                        await Promise.all(chatDeletes);
-                        
-                        console.log('🗑️ Cleared Firebase data for session');
-                    } catch (error) {
-                        console.error('❌ Error clearing Firebase:', error);
-                        alert('Error clearing Firebase data. Check console.');
-                    }
+                if (!confirm('Transfer host status to this user?')) {
+                    return;
                 }
                 
-                location.reload();
+                try {
+                    // Remove host from current host
+                    await this.db.collection('sessions').doc(this.sessionId)
+                        .collection('participants').doc(this.myParticipantId).update({
+                            isHost: false
+                        });
+                    
+                    // Make new user host
+                    await this.db.collection('sessions').doc(this.sessionId)
+                        .collection('participants').doc(participantId).update({
+                            isHost: true,
+                            canMark: true,
+                            canChat: true,
+                            canControl: true
+                        });
+                    
+                    this.isHost = false;
+                    this.showMessage('✓ Host status transferred');
+                } catch (error) {
+                    console.error('Error transferring host:', error);
+                    alert('Failed to transfer host status');
+                }
+            },
+            
+            async togglePermission(participantId, permission) {
+                if (!this.isHost) {
+                    alert('Only the host can change permissions');
+                    return;
+                }
+                
+                try {
+                    // Get current participant data
+                    const participantDoc = await this.db.collection('sessions').doc(this.sessionId)
+                        .collection('participants').doc(participantId).get();
+                    
+                    if (!participantDoc.exists) return;
+                    
+                    const participantData = participantDoc.data();
+                    const permField = permission === 'mark' ? 'canMark' : 'canChat';
+                    const newValue = !participantData[permField];
+                    
+                    await this.db.collection('sessions').doc(this.sessionId)
+                        .collection('participants').doc(participantId).update({
+                            [permField]: newValue
+                        });
+                    
+                    const action = newValue ? 'enabled' : 'disabled';
+                    const permName = permission === 'mark' ? 'marking' : 'chat';
+                    this.showMessage(`✓ ${permName} ${action} for ${participantData.name}`);
+                } catch (error) {
+                    console.error('Error toggling permission:', error);
+                    alert('Failed to change permission');
+                }
+            },
+            
+            async kickUser(participantId) {
+                if (!this.isHost) {
+                    alert('Only the host can kick users');
+                    return;
+                }
+                
+                if (!confirm('Kick this user from the session?')) {
+                    return;
+                }
+                
+                try {
+                    await this.db.collection('sessions').doc(this.sessionId)
+                        .collection('participants').doc(participantId).delete();
+                    
+                    this.showMessage('✓ User kicked');
+                } catch (error) {
+                    console.error('Error kicking user:', error);
+                    alert('Failed to kick user');
+                }
+            },
+            
+            leaveSession() {
+                // Different options for host vs guest
+                if (this.isHost) {
+                    // Show modal with 3 button choices
+                    document.getElementById('leaveSessionModal').classList.remove('hidden');
+                } else {
+                    // Show guest confirmation modal
+                    document.getElementById('guestLeaveModal').classList.remove('hidden');
+                }
+            },
+            
+            closeLeaveSessionModal() {
+                document.getElementById('leaveSessionModal').classList.add('hidden');
+            },
+            
+            closeGuestLeaveModal() {
+                document.getElementById('guestLeaveModal').classList.add('hidden');
+            },
+            
+            confirmLeaveAsGuest() {
+                this.closeGuestLeaveModal();
+                this.leaveAsGuest();
+            },
+            
+            async endSessionForAll() {
+                this.closeLeaveSessionModal();
+                
+                try {
+                    // Delete all markers
+                    const markersSnapshot = await this.db.collection('sessions').doc(this.sessionId)
+                        .collection('markers').get();
+                    const markerDeletes = markersSnapshot.docs.map(doc => doc.ref.delete());
+                    await Promise.all(markerDeletes);
+                    
+                    // Delete all chat
+                    const chatSnapshot = await this.db.collection('sessions').doc(this.sessionId)
+                        .collection('chat').get();
+                    const chatDeletes = chatSnapshot.docs.map(doc => doc.ref.delete());
+                    await Promise.all(chatDeletes);
+                    
+                    // Delete all participants
+                    const participantsSnapshot = await this.db.collection('sessions').doc(this.sessionId)
+                        .collection('participants').get();
+                    const participantDeletes = participantsSnapshot.docs.map(doc => doc.ref.delete());
+                    await Promise.all(participantDeletes);
+                    
+                    // Delete session document
+                    await this.db.collection('sessions').doc(this.sessionId).delete();
+                    
+                    console.log('🗑️ Session ended for everyone');
+                    
+                    // Clear local storage
+                    localStorage.removeItem('film-spotter-hitpoints-' + this.sessionId);
+                    localStorage.removeItem('film-spotter-chat-' + this.sessionId);
+                    localStorage.removeItem('film-spotter-session-id');
+                    
+                    alert('Session ended for all participants');
+                    location.reload();
+                } catch (error) {
+                    console.error('❌ Error ending session:', error);
+                    alert('Error ending session. Check console.');
+                }
+            },
+            
+            async leaveAndTransferHost() {
+                this.closeLeaveSessionModal();
+                
+                try {
+                    // Get all other participants
+                    const participantsSnapshot = await this.db.collection('sessions').doc(this.sessionId)
+                        .collection('participants').get();
+                    
+                    const otherParticipants = [];
+                    participantsSnapshot.forEach(doc => {
+                        const data = doc.data();
+                        if (data.id !== this.myParticipantId) {
+                            otherParticipants.push(data);
+                        }
+                    });
+                    
+                    if (otherParticipants.length > 0) {
+                        // Transfer host to first other participant
+                        const newHost = otherParticipants[0];
+                        await this.db.collection('sessions').doc(this.sessionId)
+                            .collection('participants').doc(newHost.id).update({
+                                isHost: true
+                            });
+                        
+                        console.log(`👑 Transferred host to ${newHost.name}`);
+                    }
+                    
+                    // Remove ourselves
+                    await this.db.collection('sessions').doc(this.sessionId)
+                        .collection('participants').doc(this.myParticipantId).delete();
+                    
+                    // Clear heartbeat
+                    if (this.participantHeartbeat) {
+                        clearInterval(this.participantHeartbeat);
+                    }
+                    
+                    // Clear local storage
+                    localStorage.removeItem('film-spotter-session-id');
+                    
+                    alert('You have left the session. Session continues for others.');
+                    location.reload();
+                } catch (error) {
+                    console.error('❌ Error leaving session:', error);
+                    alert('Error leaving session. Check console.');
+                }
+            },
+            
+            async leaveAsGuest() {
+                try {
+                    // Remove ourselves from participants
+                    await this.db.collection('sessions').doc(this.sessionId)
+                        .collection('participants').doc(this.myParticipantId).delete();
+                    
+                    // Clear heartbeat
+                    if (this.participantHeartbeat) {
+                        clearInterval(this.participantHeartbeat);
+                    }
+                    
+                    // Clear local storage
+                    localStorage.removeItem('film-spotter-session-id');
+                    
+                    console.log('👋 Left session');
+                    location.reload();
+                } catch (error) {
+                    console.error('❌ Error leaving session:', error);
+                    alert('Error leaving session. Check console.');
+                }
             },
             
             startUpdateLoop() {
