@@ -1617,24 +1617,24 @@
             },
             
             copySessionLink() {
-                // Always use the random session ID in the URL
-                const sessionIdToUse = this.sessionId;
+                if (!this.sessionId) {
+                    this.showMessage('⚠️ No active session to share', true);
+                    return;
+                }
                 
-                const baseUrl = window.location.href.split('?')[0];
-                const sessionLink = `${baseUrl}?session=${sessionIdToUse}`;
+                // Get base URL without query parameters
+                const baseUrl = window.location.origin + window.location.pathname;
+                const sessionLink = `${baseUrl}?session=${this.sessionId}`;
                 
-                console.log(`📋 Copying link for session: ${sessionIdToUse}`);
+                console.log(`📋 Base URL: ${baseUrl}`);
+                console.log(`📋 Session ID: ${this.sessionId}`);
                 console.log(`📋 Full link: ${sessionLink}`);
                 
                 // Copy to clipboard
                 navigator.clipboard.writeText(sessionLink).then(() => {
-                    // Check if this is a local file with version number
-                    if (baseUrl.includes('file://') && (baseUrl.match(/_\d+\.html/) || baseUrl.match(/\(\d+\)\.html/))) {
-                        this.showMessage(`⚠️ Link copied, but filename has version number. Guest must have same file!`);
-                    } else {
-                        this.showMessage(`✓ Session link copied`);
-                    }
-                }).catch(() => {
+                    this.showMessage(`✓ Session link copied: ${this.sessionId}`);
+                }).catch((error) => {
+                    console.error('Clipboard error:', error);
                     // Fallback for older browsers
                     prompt('Copy this link to share:', sessionLink);
                 });
@@ -2828,6 +2828,33 @@
                     console.log(`✅ Registered as participant: ${this.userName} (${participantId})`);
                 } catch (error) {
                     console.error('❌ Error registering participant:', error);
+                }
+            },
+            
+            async refreshParticipants() {
+                if (!this.db || !this.sessionId) return;
+                
+                try {
+                    const snapshot = await this.db.collection('sessions').doc(this.sessionId)
+                        .collection('participants').get();
+                    
+                    const participants = [];
+                    const now = Date.now();
+                    
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const lastSeenTime = data.lastSeen || 0;
+                        
+                        // If no valid timestamp or within 30 seconds, consider active
+                        if (lastSeenTime === 0 || (now - lastSeenTime < 30000 && now - lastSeenTime > -5000)) {
+                            participants.push(data);
+                        }
+                    });
+                    
+                    this.renderParticipants(participants);
+                    console.log(`👥 Refreshed participants: ${participants.length} active`);
+                } catch (error) {
+                    console.error('❌ Error refreshing participants:', error);
                 }
             },
             
