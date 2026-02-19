@@ -1630,14 +1630,49 @@
                 console.log(`📋 Session ID: ${this.sessionId}`);
                 console.log(`📋 Full link: ${sessionLink}`);
                 
-                // Copy to clipboard
-                navigator.clipboard.writeText(sessionLink).then(() => {
-                    this.showMessage(`✓ Session link copied: ${this.sessionId}`);
-                }).catch((error) => {
-                    console.error('Clipboard error:', error);
-                    // Fallback for older browsers
-                    prompt('Copy this link to share:', sessionLink);
-                });
+                // Check if clipboard API is actually available (Safari blocks on HTTP)
+                const hasClipboard = navigator.clipboard && typeof navigator.clipboard.writeText === 'function';
+                
+                if (hasClipboard) {
+                    // Try modern clipboard API
+                    navigator.clipboard.writeText(sessionLink).then(() => {
+                        this.showMessage(`✓ Session link copied`);
+                        console.log('✅ Copied via clipboard API');
+                    }).catch((error) => {
+                        console.warn('Clipboard API failed, using fallback:', error);
+                        this.fallbackCopy(sessionLink);
+                    });
+                } else {
+                    // Use fallback immediately
+                    console.log('📋 Using fallback copy (no clipboard API)');
+                    this.fallbackCopy(sessionLink);
+                }
+            },
+            
+            fallbackCopy(text) {
+                // Create temporary textarea
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.style.position = 'fixed';
+                textarea.style.opacity = '0';
+                document.body.appendChild(textarea);
+                textarea.select();
+                
+                try {
+                    const successful = document.execCommand('copy');
+                    if (successful) {
+                        this.showMessage(`✓ Session link copied`);
+                        console.log('✅ Copied via fallback method');
+                    } else {
+                        // Last resort: show prompt
+                        prompt('Copy this link to share:', text);
+                    }
+                } catch (err) {
+                    console.error('Fallback copy failed:', err);
+                    prompt('Copy this link to share:', text);
+                } finally {
+                    document.body.removeChild(textarea);
+                }
             },
             
             showRecentSessions() {
@@ -4138,6 +4173,10 @@
                     document.getElementById('sessionPassword').value = '';
                     document.getElementById('enablePassword').checked = false;
                     document.getElementById('sessionPassword').classList.add('hidden');
+                    document.getElementById('timecodeOffset').value = '';
+                    
+                    // Reset timecode offset
+                    this.timecodeOffset = 0;
                     
                     // Update preview
                     document.getElementById('sessionIdDisplay').textContent = newSessionId;
@@ -4584,6 +4623,10 @@
                     localStorage.removeItem('film-spotter-hitpoints-' + this.sessionId);
                     localStorage.removeItem('film-spotter-chat-' + this.sessionId);
                     localStorage.removeItem('film-spotter-session-id');
+                    
+                    // Reset timecode offset
+                    this.timecodeOffset = 0;
+                    document.getElementById('timecodeOffset').value = '';
                     
                     alert('Session ended for all participants');
                     location.reload();
