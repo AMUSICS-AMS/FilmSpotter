@@ -978,7 +978,7 @@
                             <label>Project Name</label>
                             <input type="text" id="projectNameInput" placeholder="My Film Project" />
                         </div>
-                        <button class="btn" onclick="app.loadVideo()">Load Video</button>
+                        <button class="btn" onclick="app.loadVideo()">Enter Session</button>
                     </div>
                 </div>
                 
@@ -1001,9 +1001,9 @@
                         <div class="timecode-display" id="timecode">00:00:00:00</div>
                         
                         <div class="playback-controls" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                            <button class="btn btn-secondary" onclick="app.togglePlayPause()" style="min-width: 40px; line-height: 1; font-size: 16px;">⏯</button>
-                            <button class="btn btn-secondary" onclick="app.skipBack()" style="min-width: 40px; line-height: 1; font-size: 16px;">⏪</button>
-                            <button class="btn btn-secondary" onclick="app.skipForward()" style="min-width: 40px; line-height: 1; font-size: 16px;">⏩</button>
+                            <button class="btn btn-secondary" onclick="app.togglePlayPause()" style="min-width: 40px; line-height: 1; font-size: 16px;">▶/⏸</button>
+                            <button class="btn btn-secondary" onclick="app.skipBack()" style="min-width: 40px; line-height: 1; font-size: 16px;">«</button>
+                            <button class="btn btn-secondary" onclick="app.skipForward()" style="min-width: 40px; line-height: 1; font-size: 16px;">»</button>
                             <button class="btn btn-secondary" onclick="app.previousFrame()" style="min-width: 40px; line-height: 1; font-size: 16px;">◀</button>
                             <button class="btn btn-secondary" onclick="app.nextFrame()" style="min-width: 40px; line-height: 1; font-size: 16px;">▶</button>
                             <div style="display: flex; align-items: center; gap: 6px; margin-left: 10px;">
@@ -1409,6 +1409,7 @@
             db: null, // Firestore database reference
             unsubscribeListeners: [], // Store listener unsubscribe functions
             participantHeartbeat: null, // Interval for participant heartbeat
+            frameSyncTimeout: null, // Timeout for debouncing frame nudge sync
             myParticipantId: null, // This user's participant ID
             lastParticipantCount: -1, // Track last count (-1 means never set, forces first update)
             participantUpdateCount: 0, // Count how many times we've updated
@@ -1444,14 +1445,14 @@
                     name: 'VFX',
                     color: '#9933ff', // Purple/Magenta
                     markers: [
-                        { value: 'shot', label: 'Shot', color: '#9933ff' }
+                        { value: 'note', label: 'Note', color: '#9933ff' }
                     ]
                 },
                 edit: {
                     name: 'Edit',
                     color: '#00cc00', // Green
                     markers: [
-                        { value: 'shot', label: 'Shot', color: '#00cc00' }
+                        { value: 'note', label: 'Note', color: '#00cc00' }
                     ]
                 },
                 color: {
@@ -1774,6 +1775,17 @@
             setupEventListeners() {
                 // Don't setup custom timeline here - wait until video loads
                 
+                // Enter key to mark hit point (like chat)
+                const hitPointInput = document.getElementById('hitPointNote');
+                if (hitPointInput) {
+                    hitPointInput.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            this.markHitPoint();
+                        }
+                    });
+                }
+                
                 // Save username when it changes
                 document.getElementById('userNameInput').addEventListener('change', (e) => {
                     this.userName = e.target.value.trim() || 'Anonymous';
@@ -1877,8 +1889,10 @@
                 
                 // Keyboard shortcuts
                 document.addEventListener('keydown', (e) => {
-                    // Don't trigger shortcuts if user is typing in an input field
-                    const isTyping = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA';
+                    // Don't trigger shortcuts if user is typing in an input field or editing timecode
+                    const isTyping = e.target.tagName === 'INPUT' || 
+                                    e.target.tagName === 'TEXTAREA' ||
+                                    e.target.contentEditable === 'true';
                     
                     if (isTyping) {
                         return; // Let the user type normally
@@ -2670,15 +2684,20 @@
                 try {
                     const videoUrl = document.getElementById('videoUrlInput').value.trim();
                     const projectName = document.getElementById('projectNameInput').value.trim();
-                    const userName = document.getElementById('userNameInput').value.trim();
+                    const userName = document.getElementById('userNameInput').value.trim() || 'Anonymous';
                     const sessionName = document.getElementById('sessionNameInput').value.trim();
                     
                     console.log('🎬 Loading video...', { videoUrl, projectName, userName, sessionName });
                     
-                    if (userName) {
-                        this.userName = userName;
-                        localStorage.setItem('film-spotter-username', userName);
-                        document.getElementById('userBadge').textContent = userName;
+                    // ALWAYS set username (even if empty, use Anonymous)
+                    this.userName = userName;
+                    localStorage.setItem('film-spotter-username', userName);
+                    
+                    // Update header badge
+                    const userBadge = document.getElementById('userBadge');
+                    if (userBadge) {
+                        userBadge.textContent = userName;
+                        console.log(`👤 Username set: ${userName}`);
                     }
                     
                     // Store session name (friendly display name)
@@ -3129,12 +3148,40 @@
             
             toggleFullscreen() {
                 const videoContainer = document.querySelector('.video-container');
-                if (!document.fullscreenElement) {
-                    videoContainer.requestFullscreen().catch(err => {
-                        console.error('Error attempting fullscreen:', err);
-                    });
+                
+                // Check if already in fullscreen
+                const isFullscreen = document.fullscreenElement || 
+                                   document.webkitFullscreenElement || 
+                                   document.mozFullScreenElement ||
+                                   document.msFullscreenElement;
+                
+                if (!isFullscreen) {
+                    // Request fullscreen with vendor prefixes
+                    if (videoContainer.requestFullscreen) {
+                        videoContainer.requestFullscreen().catch(err => {
+                            console.error('Fullscreen error:', err);
+                            this.showMessage('⚠️ Fullscreen not supported on this browser', true);
+                        });
+                    } else if (videoContainer.webkitRequestFullscreen) {
+                        videoContainer.webkitRequestFullscreen();
+                    } else if (videoContainer.mozRequestFullScreen) {
+                        videoContainer.mozRequestFullScreen();
+                    } else if (videoContainer.msRequestFullscreen) {
+                        videoContainer.msRequestFullscreen();
+                    } else {
+                        this.showMessage('⚠️ Fullscreen not supported on this browser', true);
+                    }
                 } else {
-                    document.exitFullscreen();
+                    // Exit fullscreen with vendor prefixes
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                    } else if (document.webkitExitFullscreen) {
+                        document.webkitExitFullscreen();
+                    } else if (document.mozCancelFullScreen) {
+                        document.mozCancelFullScreen();
+                    } else if (document.msExitFullscreen) {
+                        document.msExitFullscreen();
+                    }
                 }
             },
             
@@ -3143,12 +3190,15 @@
                     this.showMessage('⛔ You do not have permission to control playback', true);
                     return;
                 }
-                console.log('⏮️ Previous frame');
                 this.video.pause();
                 const frameDuration = 1 / this.fps;
                 this.video.currentTime = Math.max(0, this.video.currentTime - frameDuration);
-                console.log(`   New time: ${this.video.currentTime.toFixed(3)}s`);
-                this.syncPlaybackState();
+                
+                // Debounce sync - only sync after user stops pressing
+                clearTimeout(this.frameSyncTimeout);
+                this.frameSyncTimeout = setTimeout(() => {
+                    this.syncPlaybackState();
+                }, 300); // Sync after 300ms of no frame nudging
             },
             
             nextFrame() {
@@ -3156,12 +3206,15 @@
                     this.showMessage('⛔ You do not have permission to control playback', true);
                     return;
                 }
-                console.log('⏭️ Next frame');
                 this.video.pause();
                 const frameDuration = 1 / this.fps;
                 this.video.currentTime = Math.min(this.video.duration, this.video.currentTime + frameDuration);
-                console.log(`   New time: ${this.video.currentTime.toFixed(3)}s`);
-                this.syncPlaybackState();
+                
+                // Debounce sync - only sync after user stops pressing
+                clearTimeout(this.frameSyncTimeout);
+                this.frameSyncTimeout = setTimeout(() => {
+                    this.syncPlaybackState();
+                }, 300); // Sync after 300ms of no frame nudging
             },
             
             async syncPlaybackState() {
@@ -3271,7 +3324,7 @@
                 markerSelect.innerHTML = '';
                 
                 if (selectedDept === 'global') {
-                    // Show ALL markers from ALL departments in alphabetical order
+                    // Show ALL markers from ALL departments
                     this.currentDepartment = 'music'; // Default to music for saving
                     
                     const allMarkers = [];
@@ -3284,8 +3337,12 @@
                         });
                     });
                     
-                    // Sort alphabetically
-                    allMarkers.sort((a, b) => a.label.localeCompare(b.label));
+                    // Sort alphabetically but put "Note" first
+                    allMarkers.sort((a, b) => {
+                        if (a.value === 'note') return -1;
+                        if (b.value === 'note') return 1;
+                        return a.label.localeCompare(b.label);
+                    });
                     
                     allMarkers.forEach(marker => {
                         const option = document.createElement('option');
@@ -3763,6 +3820,15 @@
             },
             
             async deleteHitPoint(id) {
+                // Find the marker to show in confirmation
+                const marker = this.storage.hitPoints.find(hp => hp.id === id);
+                const markerInfo = marker ? `"${marker.note || marker.timecode}"` : 'this marker';
+                
+                // Confirmation dialog
+                if (!confirm(`Are you sure you want to delete ${markerInfo}?`)) {
+                    return; // User cancelled
+                }
+                
                 this.storage.hitPoints = this.storage.hitPoints.filter(hp => hp.id !== id);
                 
                 // Delete from Firebase
@@ -3780,6 +3846,7 @@
                 localStorage.setItem('film-spotter-hitpoints-' + this.sessionId, JSON.stringify(this.storage.hitPoints));
                 
                 await this.refreshHitPoints();
+                this.showMessage('✓ Marker deleted');
             },
             
             openEditModal(id) {
@@ -3989,22 +4056,33 @@
             
             jumpToFrame(timecode) {
                 if (!timecode) {
-                    timecode = prompt('Enter timecode to jump to (HH:MM:SS:FF):', '00:00:00:00');
+                    timecode = prompt('Enter timecode (HH:MM:SS:FF or HHMMSSFF):', '00:00:00:00');
                 }
                 if (!timecode) return;
                 
-                // Parse timecode format HH:MM:SS:FF
-                const parts = timecode.trim().split(/[:;]/);
-                if (parts.length !== 4) {
-                    alert('Invalid timecode format. Use HH:MM:SS:FF');
-                    this.updateTimecode();
-                    return;
-                }
+                timecode = timecode.trim();
+                let hours, minutes, seconds, frames;
                 
-                const hours = parseInt(parts[0]) || 0;
-                const minutes = parseInt(parts[1]) || 0;
-                const seconds = parseInt(parts[2]) || 0;
-                const frames = parseInt(parts[3]) || 0;
+                // Check if it's 8 digits with no separators (HHMMSSFF)
+                if (/^\d{8}$/.test(timecode)) {
+                    hours = parseInt(timecode.substring(0, 2)) || 0;
+                    minutes = parseInt(timecode.substring(2, 4)) || 0;
+                    seconds = parseInt(timecode.substring(4, 6)) || 0;
+                    frames = parseInt(timecode.substring(6, 8)) || 0;
+                } else {
+                    // Parse timecode format HH:MM:SS:FF or HH:MM:SS;FF
+                    const parts = timecode.split(/[:;]/);
+                    if (parts.length !== 4) {
+                        alert('Invalid timecode format. Use HH:MM:SS:FF or HHMMSSFF (8 digits)');
+                        this.updateTimecode();
+                        return;
+                    }
+                    
+                    hours = parseInt(parts[0]) || 0;
+                    minutes = parseInt(parts[1]) || 0;
+                    seconds = parseInt(parts[2]) || 0;
+                    frames = parseInt(parts[3]) || 0;
+                }
                 
                 // Calculate time in seconds (this includes the offset calculation)
                 const targetTime = hours * 3600 + minutes * 60 + seconds + (frames / this.fps);
@@ -4019,7 +4097,10 @@
                 }
                 
                 this.video.currentTime = videoTime;
-                this.showMessage('✓ Jumped to ' + timecode);
+                
+                // Format display timecode
+                const displayTC = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}:${String(frames).padStart(2, '0')}`;
+                this.showMessage('✓ Jumped to ' + displayTC);
             },
             
             async sendChat() {
