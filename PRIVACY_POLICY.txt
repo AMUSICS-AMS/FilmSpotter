@@ -1,0 +1,152 @@
+# FilmSpotter Privacy Policy
+
+**Last Updated:** February 16, 2026
+
+## 1. Introduction
+
+FilmSpotter ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our Service.
+
+## 2. Information We Collect
+
+### 2.1 Information You Provide
+- **User Name:** You provide a display name when creating or joining a session
+- **Project Names:** Names you assign to your video projects
+- **Event Markers:** Timecoded notes, markers, and annotations you create
+- **Session IDs and Passwords:** Optional session passwords you create
+
+### 2.2 Information Automatically Collected
+- **Browser Information:** Browser type, version, and operating system
+- **Usage Data:** How you interact with the Service (features used, session duration)
+- **Session Data:** Temporary session identifiers stored in localStorage
+
+### 2.3 Information We DO NOT Collect
+- **Video Files:** We do NOT store, access, or process your video files
+- **Personal Identifiable Information:** We do not require email addresses, phone numbers, or real names
+- **Payment Information:** Currently not collected (free tier)
+
+## 3. How We Use Your Information
+
+We use collected information to:
+- Provide and maintain the Service
+- Improve user experience and Service functionality
+- Monitor usage patterns to optimize performance
+- Detect, prevent, and address technical issues
+- Communicate with you about the Service (if contact information is provided)
+
+## 4. Data Storage
+
+### 4.1 Local Storage (Browser)
+- Event markers, session data, and user preferences are stored in your browser's localStorage
+- This data remains on your device and is NOT transmitted to our servers
+- You can delete this data at any time by clearing your browser's localStorage
+
+### 4.2 Third-Party Storage
+- Video files are hosted by third-party services YOU choose (Dropbox, Vimeo, Google Drive, etc.)
+- We do not have access to these files
+- These services have their own privacy policies that govern how they handle your data
+
+### 4.3 Server Storage (Future)
+- If real-time collaboration features are implemented, event data may be stored on our servers
+- You will be explicitly notified and asked to consent before this feature is enabled
+- Server-stored data will be encrypted and accessible only to authorized session participants
+
+## 5. Data Sharing and Disclosure
+
+### 5.1 We DO NOT Sell Your Data
+We do not sell, trade, or rent your personal information to third parties.
+
+### 5.2 We May Share Data With:
+- **Service Providers:** Third-party vendors who help us operate the Service (hosting, analytics, etc.)
+- **Legal Requirements:** If required by law, regulation, legal process, or governmental request
+- **Protection of Rights:** To protect our rights, property, or safety, or that of our users or others
+
+### 5.3 Collaborative Sessions
+- When you join a collaborative session, your user name and markers are visible to other session participants
+- Use session passwords to control who can access your sessions
+
+## 6. Data Security
+
+We implement reasonable security measures to protect your data, including:
+- HTTPS encryption for data transmission
+- Secure session IDs
+- Optional password protection for sessions
+- Regular security audits
+
+However, no method of transmission over the Internet is 100% secure. We cannot guarantee absolute security.
+
+## 7. Data Retention
+
+### 7.1 Local Data
+- Data stored in your browser's localStorage persists until you manually clear it
+- Clearing your browser data will permanently delete all local session information
+
+### 7.2 Server Data (If Implemented)
+- Session data will be retained for [X days/months] after last activity
+- You may request deletion of your data at any time
+
+## 8. Your Rights and Choices
+
+### 8.1 Access and Control
+- You can view all data stored in your browser's localStorage using browser developer tools
+- You can delete your data at any time by clearing localStorage
+- You can export your data using the export feature
+
+### 8.2 Opt-Out
+- You can stop using the Service at any time
+- Closing your browser or clearing localStorage will remove all local data
+
+### 8.3 Do Not Track
+Currently, we do not respond to "Do Not Track" signals because we do not track users across third-party websites.
+
+## 9. Children's Privacy
+
+FilmSpotter is intended for professional use by adults. We do not knowingly collect information from children under 13. If we discover we have collected information from a child under 13, we will delete it immediately.
+
+## 10. International Users
+
+FilmSpotter is hosted in [Your Country]. If you access the Service from outside [Your Country], your data may be transferred to and processed in [Your Country]. By using the Service, you consent to this transfer.
+
+## 11. Third-Party Links and Services
+
+FilmSpotter integrates with third-party services (Dropbox, Vimeo, etc.). We are not responsible for the privacy practices of these services. Please review their privacy policies.
+
+## 12. Changes to This Privacy Policy
+
+We may update this Privacy Policy from time to time. We will notify you of material changes by:
+- Updating the "Last Updated" date
+- Posting a notice in the Service
+- (If implemented) Sending an email notification
+
+Your continued use of the Service after changes constitutes acceptance of the updated Privacy Policy.
+
+## 13. Your California Privacy Rights (CCPA)
+
+If you are a California resident, you have the right to:
+- Know what personal information we collect, use, and disclose
+- Request deletion of your personal information
+- Opt-out of the sale of your personal information (we do not sell personal information)
+
+To exercise these rights, contact us at [Your Email Address].
+
+## 14. European Users (GDPR)
+
+If you are in the European Economic Area, you have rights under the General Data Protection Regulation (GDPR):
+- **Right to Access:** Request a copy of your data
+- **Right to Rectification:** Correct inaccurate data
+- **Right to Erasure:** Request deletion of your data
+- **Right to Restrict Processing:** Limit how we use your data
+- **Right to Data Portability:** Receive your data in a portable format
+- **Right to Object:** Object to certain types of processing
+
+To exercise these rights, contact us at [Your Email Address].
+
+## 15. Contact Us
+
+For questions or concerns about this Privacy Policy, contact us at:
+
+**Email:** [Your Email Address]  
+**Website:** [Your Website]
+
+## 16. Data Breach Notification
+
+In the event of a data breach that affects your personal information, we will notify affected users within 72 hours of becoming aware of the breach.

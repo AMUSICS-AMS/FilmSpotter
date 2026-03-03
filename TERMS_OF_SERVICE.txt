@@ -1,0 +1,117 @@
+# FilmSpotter Terms of Service
+
+**Last Updated:** February 16, 2026
+
+## 1. Acceptance of Terms
+
+By accessing or using FilmSpotter ("Service"), you agree to be bound by these Terms of Service ("Terms"). If you do not agree to these Terms, do not use the Service.
+
+## 2. Description of Service
+
+FilmSpotter is a web-based collaborative video review tool designed for film and television post-production professionals. The Service allows users to:
+- Mark timecoded events in video files
+- Collaborate with team members in real-time
+- Export event lists in multiple formats (CSV, JSON, EDL)
+- Organize markers by department (Music, Sound, VFX, Edit, Color)
+
+## 3. User Accounts and Responsibilities
+
+### 3.1 Account Security
+- You are responsible for maintaining the confidentiality of session IDs and passwords
+- You are responsible for all activities that occur under your account
+- You must notify us immediately of any unauthorized use of your account
+
+### 3.2 User Conduct
+You agree NOT to:
+- Use the Service for any illegal purpose
+- Upload, share, or link to content that infringes on intellectual property rights
+- Upload malicious code, viruses, or harmful content
+- Attempt to gain unauthorized access to the Service or other users' data
+- Interfere with or disrupt the Service or servers
+
+## 4. Content and Intellectual Property
+
+### 4.1 Your Content
+- You retain all rights to video files and content you upload or link to
+- You grant FilmSpotter a limited license to process and display your content solely for providing the Service
+- You are solely responsible for ensuring you have the rights to use and share any content
+
+### 4.2 Our Intellectual Property
+- FilmSpotter and its original content, features, and functionality are owned by [Your Company Name]
+- The Service is protected by copyright, trademark, and other laws
+- You may not copy, modify, distribute, sell, or lease any part of our Service without explicit permission
+
+## 5. Third-Party Services
+
+FilmSpotter integrates with third-party services (Dropbox, Vimeo, Google Drive, etc.). Your use of these services is subject to their respective terms of service and privacy policies. We are not responsible for the availability, content, or practices of third-party services.
+
+## 6. Data Storage and Privacy
+
+### 6.1 Local Storage
+- Event markers and session data are stored locally in your browser's localStorage
+- We do not have access to data stored in your browser's localStorage
+- Clearing your browser data will delete your local session information
+
+### 6.2 Video Files
+- FilmSpotter does NOT host or store your video files
+- Videos are streamed directly from your chosen hosting service (Dropbox, Vimeo, etc.)
+- We never have access to your actual video files
+
+### 6.3 Future Features
+- If real-time collaboration features are implemented, event data may be stored on our servers
+- You will be notified and asked to consent before any such features are enabled
+
+## 7. Disclaimers and Limitations of Liability
+
+### 7.1 Service Provided "As Is"
+THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT.
+
+### 7.2 No Guarantee of Accuracy
+- We do not guarantee the accuracy of timecode calculations, frame rates, or exported data
+- Users are responsible for verifying all exported data before use in production
+
+### 7.3 Limitation of Liability
+IN NO EVENT SHALL FILMSPOTTER BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO LOSS OF PROFITS, DATA, USE, OR OTHER INTANGIBLE LOSSES, RESULTING FROM:
+- Your use or inability to use the Service
+- Unauthorized access to or alteration of your data
+- Any content obtained from the Service
+- Loss of work or production delays resulting from Service errors
+
+OUR TOTAL LIABILITY SHALL NOT EXCEED THE AMOUNT YOU PAID US IN THE PAST 12 MONTHS (IF ANY).
+
+## 8. Indemnification
+
+You agree to indemnify and hold harmless FilmSpotter and its affiliates from any claims, damages, losses, liabilities, and expenses (including legal fees) arising from:
+- Your use of the Service
+- Your violation of these Terms
+- Your violation of any rights of another party
+- Content you upload, link to, or share through the Service
+
+## 9. Termination
+
+### 9.1 By You
+You may stop using the Service at any time. Clear your browser data to remove all local session information.
+
+### 9.2 By Us
+We reserve the right to suspend or terminate your access to the Service at any time, with or without cause, with or without notice.
+
+## 10. Changes to Terms
+
+We reserve the right to modify these Terms at any time. We will notify users of material changes by updating the "Last Updated" date. Your continued use of the Service after changes constitutes acceptance of the new Terms.
+
+## 11. Governing Law
+
+These Terms shall be governed by and construed in accordance with the laws of [Your State/Country], without regard to its conflict of law provisions.
+
+## 12. Contact
+
+For questions about these Terms, contact us at:
+[Your Email Address]
+
+## 13. Severability
+
+If any provision of these Terms is found to be unenforceable, the remaining provisions will remain in full force and effect.
+
+## 14. Entire Agreement
+
+These Terms constitute the entire agreement between you and FilmSpotter regarding the Service and supersede all prior agreements.
