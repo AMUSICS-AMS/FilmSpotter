@@ -1,0 +1,760 @@
+# FILMSPOTTER PRO - COMPLETE FEATURE ROADMAP
+
+**Version:** 1.0  
+**Date:** February 26, 2026  
+**Status:** Planning Phase
+
+---
+
+## EXECUTIVE SUMMARY
+
+FilmSpotter Pro is the premium version of FilmSpotter, adding user accounts, project management, onscreen annotations, version control, and professional import/export capabilities. 
+
+**Strategic Approach:** Build AudioReview first (10 weeks), then clone foundation to FilmSpotter Pro (6 weeks) = 16 weeks total for both products vs. 25 weeks if built separately.
+
+---
+
+## PHASE 1: FOUNDATION (Weeks 1-2)
+
+### User Accounts & Authentication
+- ✅ Firebase Authentication (login/signup)
+- ✅ User profiles (name, email, preferences)
+- ✅ Password reset functionality
+- ✅ Session persistence across devices
+
+### Project Management
+- ✅ "My Projects" dashboard
+- ✅ Create/save/organize projects
+- ✅ Recent projects list
+- ✅ Search/filter projects
+- ✅ Project metadata (name, date, collaborators)
+
+### Version Control
+- ✅ Multiple versions per project
+- ✅ Version naming (v1, v2, v3, Final, etc.)
+- ✅ Version comparison (side-by-side player)
+- ✅ Version history timeline
+- ✅ Ability to update video file in existing session
+
+**Deliverable:** Users can create accounts, manage projects, and save multiple versions
+
+---
+
+## PHASE 2: ANNOTATIONS & REGIONS (Weeks 3-4)
+
+### Onscreen Annotations (Video-Specific)
+Drawing tools:
+- ✅ Circle tool
+- ✅ Box/Rectangle tool
+- ✅ Arrow tool
+- ✅ Freehand drawing tool
+- ✅ Text labels
+
+Features:
+- ✅ Color picker for annotations
+- ✅ Annotation persistence (tied to timecode)
+- ✅ SVG-based (scales with video)
+- ✅ Percentage-based coordinates
+- ✅ Show/hide annotations toggle
+- ✅ Delete individual annotations
+- ✅ Annotations visible to all users in real-time
+
+### Music/Song Regions
+- ✅ Music In/Out markers with visual connection
+- ✅ Song In/Out markers with visual connection
+- ✅ Checkbox to link Music In → Music Out as region
+- ✅ Checkbox to link Song In → Song Out as region
+- ✅ Visual timeline highlight showing region span
+- ✅ Auto-detect matching In/Out markers
+- ✅ Region metadata (cue name, tempo, mood)
+
+**Implementation Details:**
+- When user presses M for Music In, checkbox appears: "Link to Music Out"
+- If checked, next M creates Music Out and visually connects them
+- Similar for Song In/Out
+- Timeline shows colored highlight between In/Out markers
+- Region can be edited, split, or unlinked
+
+### Thumbnail Export
+- ✅ Export annotation screenshot + note side-by-side
+- ✅ Generate thumbnail at marker timecode
+- ✅ Include annotation drawings in thumbnail
+- ✅ PDF export with thumbnails grid
+- ✅ Download as ZIP with individual images
+
+**Deliverable:** Users can draw on video, create music regions, and export thumbnails
+
+---
+
+## PHASE 3: COLLABORATION (Weeks 5-6)
+
+### Threaded Comments on Markers
+- ✅ Reply to any marker
+- ✅ Nested comment threads
+- ✅ Real-time sync of comments
+- ✅ User attribution (who said what)
+- ✅ Timestamp on each comment
+- ✅ Edit/delete own comments
+- ✅ Mark comment threads as resolved
+- ✅ Notifications for new replies (future)
+
+**UI Design:**
+```
+📍 00:01:23:15 - "Fix color grading here" [Director]
+  └─ 💬 Colorist: "Will adjust in next pass" (2 min ago)
+     └─ 💬 Director: "Perfect, thanks!" (1 min ago)
+  [Reply] [Resolve Thread]
+```
+
+### Advanced Permissions
+Project-level roles:
+- ✅ **Owner** - Full control (can delete project, manage users)
+- ✅ **Editor** - Can mark, comment, control playback, create versions
+- ✅ **Reviewer** - Can comment and view only
+- ✅ **Viewer** - Read-only access
+
+Features:
+- ✅ Invite collaborators by email
+- ✅ Remove collaborators
+- ✅ Transfer ownership
+- ✅ Per-user permission management
+
+### Collaboration Features
+- ✅ Team workspaces (future v2.0)
+- ✅ Activity log (who did what when)
+- ✅ @mentions in comments (future v2.0)
+
+**Deliverable:** Teams can collaborate with threaded discussions and role-based permissions
+
+---
+
+## PHASE 4: PLAYBACK & UX IMPROVEMENTS (Week 7)
+
+### Playback Enhancements
+
+**Decouple Mode:**
+- ✅ Toggle on/off with warning overlay
+- ✅ "⚠️ Decoupled Mode Active" banner while enabled
+- ✅ Work independently without syncing playback to others
+- ✅ Re-sync button to rejoin group playback
+- ✅ Default: OFF (everyone synced)
+
+**Use Case:** Director wants to review section A while editor reviews section B simultaneously.
+
+### Timeline Improvements
+- ✅ Department-colored markers on timeline (already implemented)
+- ✅ Hover tooltip with marker notes (already implemented)
+- ✅ Zoom in/out on timeline (future v2.0)
+- ✅ Range selection for batch operations (future v2.0)
+
+### UI Polish
+- ✅ Collapsible sidebar (more viewing space)
+- ✅ Keyboard shortcuts panel/help modal
+- ✅ Undo/redo for markers (future v2.0)
+- ✅ Bulk select/delete markers (future v1.1)
+
+**Deliverable:** Improved playback control and cleaner UI
+
+---
+
+## PHASE 5: IMPORT/EXPORT (Week 8)
+
+### Import Formats
+- ✅ **CSV import** - Timecode, note, department, category
+- ✅ **EDL import** - Edit Decision List from NLEs (Premiere, Avid, etc.)
+- ✅ **MIDI import** - Convert MIDI markers to FilmSpotter markers
+- ✅ Preserve department/category on import
+- ✅ Merge with existing markers or replace
+
+**CSV Format:**
+```csv
+Timecode,Note,Department,Category
+00:01:23:15,Fix color grading,color,note
+00:02:45:00,Music cue starts,music,music-in
+```
+
+### Export Formats
+- ✅ **CSV export** - Enhanced with all metadata
+- ✅ **DaVinci Resolve XML** - Frame.io style export (imports directly to timeline)
+- ✅ **Avid Media Composer markers** - AAF/XML format
+- ✅ **EDL export** - Enhanced with departments
+- ✅ **MIDI export** - Regions as MIDI clips
+- ✅ **PDF export** - Grid of thumbnails with notes
+- ✅ **JSON export** - Full data backup
+
+**DaVinci Resolve XML Example:**
+```xml
+<markers>
+  <marker time="00:01:23:15" note="Fix color grading" color="red" />
+  <marker time="00:02:45:00" note="Music cue starts" color="blue" />
+</markers>
+```
+
+### Export Options
+- ✅ "Download Markers" button on Leave Session
+- ✅ Export filtered markers (by department)
+- ✅ Export selected markers only
+- ✅ Include/exclude annotations in export
+
+**Deliverable:** Seamless integration with professional post-production workflows
+
+---
+
+## PHASE 6: ADVANCED FEATURES (Weeks 9-10)
+
+### Multi-Video Tabs (v1.1 - Optional)
+- ✅ Multiple videos in one session (Reel 1, Reel 2, Reel 3)
+- ✅ Tab switching between videos
+- ✅ Markers tied to specific video
+- ✅ Filter markers by active tab
+- ✅ Share one session link for all reels
+
+**Use Case:** Editor reviewing 3 reels doesn't want to create 3 separate sessions.
+
+**UI Design:**
+```
+Tabs: [Reel 1] [Reel 2] [Reel 3] [+ Add Video]
+
+Active video plays below
+Markers filtered by active tab
+```
+
+### Platform Support
+- ✅ Dropbox (already supported)
+- ✅ Vimeo (already supported)
+- ✅ Box.net (v1.1)
+- ✅ Google Drive (future v2.0)
+- ✅ Direct file upload (future v2.0)
+
+### Status Tracking
+- ✅ Marker status: WIP, In Review, Approved, Final
+- ✅ Filter by status
+- ✅ Progress tracking (X/Y markers approved)
+- ✅ Completion indicators per department
+- ✅ Status change history
+
+**Deliverable:** Advanced project management capabilities
+
+---
+
+## NOT IN SCOPE (Save for v2.0+)
+
+**Features to skip for v1.0:**
+
+❌ AI-powered suggestions
+❌ Automated scene detection
+❌ Transcription/subtitles
+❌ Mobile app (native iOS/Android)
+❌ Offline mode
+❌ Video hosting/transcoding (users provide Dropbox/Vimeo links)
+❌ Advanced analytics/reporting
+❌ Integration with project management tools (Asana, Monday, etc.)
+❌ Custom branding/white-label
+❌ SSO/SAML authentication
+❌ API for third-party integrations
+
+---
+
+## PRICING MODEL
+
+### FilmSpotter Free (Current)
+**Features:**
+- ✅ No user accounts
+- ✅ Ephemeral sessions
+- ✅ Basic markers (all departments)
+- ✅ CSV/MIDI/EDL export
+- ✅ Real-time collaboration
+- ✅ Dropbox/Vimeo support
+- ✅ Keyboard shortcuts
+- ✅ Frame-accurate playback
+
+**Price:** **FREE forever**
+
+**Target Users:** Freelancers, students, small teams testing the tool
+
+---
+
+### FilmSpotter Pro
+**Everything in Free, plus:**
+- ✅ User accounts & authentication
+- ✅ Project management (unlimited projects)
+- ✅ Version control (unlimited versions)
+- ✅ Onscreen annotations & drawings
+- ✅ Music/Song regions with visual connection
+- ✅ Threaded comments on markers
+- ✅ Version comparison (side-by-side player)
+- ✅ DaVinci Resolve XML export
+- ✅ Avid Media Composer export
+- ✅ Thumbnail exports (PDF/ZIP)
+- ✅ Advanced permissions (roles)
+- ✅ Import markers (CSV/EDL/MIDI)
+- ✅ Project history & activity log
+- ✅ Priority support
+
+**Price:** **$50-100/month** or **$500-900/year** (save 25%)
+
+**Target Users:** Professional composers, post-production teams, studios
+
+---
+
+## TECHNICAL ARCHITECTURE
+
+### Shared with AudioReview (~60%)
+These components will be built once and used in both products:
+
+**Authentication & Users:**
+- Firebase Auth (login/signup/password reset)
+- User profiles and preferences
+- Session management
+
+**Data Layer:**
+- Firestore database structure
+- Real-time sync listeners
+- Offline persistence (localStorage fallback)
+
+**Project Management:**
+- CRUD operations (Create, Read, Update, Delete)
+- Project organization
+- Recent projects
+- Search/filter
+
+**Version Control:**
+- Multiple versions per project
+- Version metadata
+- Version comparison logic
+
+**Collaboration:**
+- Comments system (threaded)
+- User permissions
+- Real-time presence
+
+**Import/Export:**
+- CSV parser/generator
+- EDL parser/generator
+- JSON backup/restore
+
+---
+
+### FilmSpotter Pro Specific (~40%)
+These are unique to FilmSpotter:
+
+**Video Player:**
+- HTML5 video element
+- Dropbox/Vimeo URL handling
+- Timeline scrubber
+- Transport controls
+
+**Onscreen Annotations:**
+- SVG overlay system
+- Drawing tools (circle, arrow, box, freehand)
+- Coordinate system (percentage-based)
+- Annotation persistence
+
+**Music Regions:**
+- Region linking (Music In/Out)
+- Visual timeline highlights
+- Region metadata
+
+**Video-Specific Exports:**
+- DaVinci Resolve XML generator
+- Avid AAF/XML generator
+- Video thumbnail capture
+- PDF with screenshots
+
+**Multi-Video Management:**
+- Tab-based video switching
+- Per-video marker filtering
+
+---
+
+## DATABASE STRUCTURE
+
+```javascript
+// Firestore structure for FilmSpotter Pro
+
+users/{userId}/
+  profile: {
+    name: string,
+    email: string,
+    createdAt: timestamp,
+    plan: 'free' | 'pro'
+  }
+  
+  projects/{projectId}/
+    name: string,
+    createdAt: timestamp,
+    lastUpdated: timestamp,
+    videoUrl: string,  // Primary video
+    
+    collaborators/{collaboratorId}/
+      userId: string,
+      role: 'owner' | 'editor' | 'reviewer' | 'viewer',
+      addedAt: timestamp
+    
+    versions/{versionId}/
+      name: string,  // "v1", "v2", "Final Cut"
+      videoUrl: string,
+      uploadedAt: timestamp,
+      uploadedBy: userId,
+      status: 'wip' | 'review' | 'approved',
+      
+      markers/{markerId}/
+        time: number,  // seconds
+        timecode: string,
+        note: string,
+        department: string,
+        category: string,
+        userId: string,
+        createdAt: timestamp,
+        status: 'wip' | 'review' | 'approved' | 'final',
+        
+        // Music region data (if applicable)
+        isRegion: boolean,
+        regionType: 'music' | 'song',
+        linkedMarkerId: string,  // ID of matching In/Out marker
+        
+        // Music metadata (if department === 'music')
+        category: 'source' | 'score',
+        usage: 'background' | 'feature',
+        
+        comments/{commentId}/
+          userId: string,
+          userName: string,
+          text: string,
+          timestamp: timestamp,
+          editedAt: timestamp (optional),
+          parentCommentId: string (for threading)
+      
+      annotations/{annotationId}/
+        time: number,
+        type: 'circle' | 'box' | 'arrow' | 'freehand' | 'text',
+        x: number,  // percentage
+        y: number,  // percentage
+        width: number (for box),
+        height: number (for box),
+        radius: number (for circle),
+        points: array (for freehand),
+        color: string,
+        userId: string,
+        createdAt: timestamp
+```
+
+---
+
+## DEVELOPMENT TIMELINE
+
+### Option A: Build FilmSpotter Pro First
+**Week 1-2:** User accounts + projects  
+**Week 3-4:** Annotations + regions  
+**Week 5-6:** Threaded comments + collaboration  
+**Week 7:** Playback improvements + UX  
+**Week 8:** Import/Export enhancements  
+**Week 9-10:** Polish + testing  
+
+**Total: 10 weeks to FilmSpotter Pro**
+
+Then build AudioReview from scratch: **+12 weeks**
+
+**Grand Total: 22 weeks for both products**
+
+---
+
+### Option B: Build AudioReview First (RECOMMENDED)
+**Week 1-2:** User accounts + projects (shared foundation)  
+**Week 3-4:** Waveform player + markers  
+**Week 5-6:** Range markers + regions  
+**Week 7-8:** Comments + collaboration  
+**Week 9-10:** Import/Export + polish  
+
+**Total: 10 weeks to AudioReview v1.0**
+
+Then clone to FilmSpotter Pro:
+
+**Week 11:** Copy foundation, swap waveform → video  
+**Week 12-13:** Add onscreen annotations (FilmSpotter-specific)  
+**Week 14:** DaVinci/Avid exports  
+**Week 15-16:** Testing + polish  
+
+**Total: 6 weeks to FilmSpotter Pro**
+
+**Grand Total: 16 weeks for both products (saves 6 weeks!)**
+
+---
+
+## FEATURE PRIORITY MATRIX
+
+### Must Have (v1.0 MVP)
+Critical for launch:
+1. ✅ User accounts & projects
+2. ✅ Version control & comparison
+3. ✅ Onscreen annotations
+4. ✅ Music/Song regions
+5. ✅ Threaded comments
+6. ✅ DaVinci/Avid export
+7. ✅ Thumbnail export
+8. ✅ Decouple mode
+9. ✅ CSV/EDL import
+
+### Should Have (v1.1 - 3 months after launch)
+Important but not blocking:
+1. ✅ Multi-video tabs
+2. ✅ Status tracking
+3. ✅ Box.net support
+4. ✅ Bulk operations (select/delete multiple)
+5. ✅ Activity log
+6. ✅ Advanced filters
+
+### Nice to Have (v2.0 - 6-12 months after launch)
+Future enhancements:
+1. ✅ Team workspaces
+2. ✅ @mentions in comments
+3. ✅ Email notifications
+4. ✅ Timeline zoom
+5. ✅ Undo/redo
+6. ✅ Custom keyboard shortcuts
+7. ✅ Mobile-optimized UI
+8. ✅ API for integrations
+
+---
+
+## KEY DECISIONS MADE
+
+### 1. Music Regions Implementation
+**Decision:** Checkbox to link Music In → Music Out  
+**Reasoning:** More flexible than auto-linking every 2nd M keypress  
+**Implementation:** 
+- User presses M for Music In
+- Checkbox appears: "Link to Music Out?"
+- If checked, next M creates linked Music Out
+- Visual connection drawn on timeline
+
+### 2. Multi-Video Tabs
+**Decision:** Save for v1.1 (not critical for launch)  
+**Reasoning:** 
+- Adds significant complexity
+- Most users review one video at a time
+- Can validate demand in v1.0 before building
+
+### 3. Decouple Mode Default
+**Decision:** Default OFF (everyone synced)  
+**Reasoning:**
+- Most sessions want synchronized playback
+- Decoupling is advanced/occasional use case
+- User can toggle on when needed
+
+### 4. Import Priority
+**Decision:** CSV and EDL together in Phase 5  
+**Reasoning:** 
+- Both are industry standards
+- Relatively simple to implement together
+- MIDI can come later if needed
+
+### 5. Platform Support Priority
+**Decision:** Box.net in v1.1, not v1.0  
+**Reasoning:**
+- Dropbox works well and is widely used
+- Box.net requires API integration work
+- Can validate demand first
+
+### 6. Build Order
+**Decision:** AudioReview first, then FilmSpotter Pro  
+**Reasoning:**
+- 60% code reuse saves 6 weeks
+- AudioReview serves broader market
+- Get to revenue faster with AudioReview
+- Learn from AudioReview before FilmSpotter Pro
+
+---
+
+## SUCCESS METRICS
+
+**FilmSpotter Pro v1.0 is ready when:**
+
+✅ User can create account and login seamlessly  
+✅ User can create project with multiple versions  
+✅ User can draw annotations on video (all tools work)  
+✅ User can create Music In/Out regions with visual connection  
+✅ User can reply to markers (threaded comments)  
+✅ User can compare v2 vs v3 side-by-side  
+✅ User can export to DaVinci Resolve (imports successfully)  
+✅ User can import markers from CSV/EDL  
+✅ User can download markers before leaving session  
+✅ All real-time sync works flawlessly (no lag/conflicts)  
+✅ No critical bugs in 2 weeks of beta testing  
+✅ 10+ professional users have tested and provided feedback  
+
+---
+
+## RISKS & MITIGATION
+
+### Technical Risks
+
+**Risk:** Real-time sync conflicts with annotations  
+**Mitigation:** Last-write-wins strategy, conflict resolution UI
+
+**Risk:** Video playback issues on different browsers  
+**Mitigation:** Extensive cross-browser testing, fallback for older browsers
+
+**Risk:** Firebase costs scaling with users  
+**Mitigation:** Optimize queries, implement caching, monitor usage
+
+**Risk:** SVG annotation performance with many drawings  
+**Mitigation:** Limit annotations per frame, optimize rendering
+
+### Business Risks
+
+**Risk:** Users don't want to pay $50-100/month  
+**Mitigation:** Validate pricing with beta users, offer annual discount
+
+**Risk:** Free version is "good enough"  
+**Mitigation:** Make Pro features compelling (annotations, exports, versions)
+
+**Risk:** Competition from Frame.io, Wipster, etc.  
+**Mitigation:** Focus on music/composer niche, better pricing, simpler UX
+
+---
+
+## COMPETITIVE ANALYSIS
+
+### Frame.io
+**Strengths:** Video hosting, transcoding, enterprise features  
+**Weaknesses:** Expensive ($19-49/user/month), complex, not music-focused  
+**Our Advantage:** Simpler, cheaper, music-specific features (regions)
+
+### Wipster
+**Strengths:** Good collaboration, approval workflows  
+**Weaknesses:** No music-specific features, expensive  
+**Our Advantage:** Music regions, better for composers
+
+### Vimeo Review
+**Strengths:** Integrated with Vimeo, familiar UI  
+**Weaknesses:** Basic features, no music tools  
+**Our Advantage:** Professional music features, better exports
+
+### Current FilmSpotter Free
+**Strengths:** Free, simple, works well for basic reviews  
+**Weaknesses:** No persistence, no annotations, limited exports  
+**Our Advantage:** Pro builds on Free's strengths, adds power features
+
+---
+
+## BETA TESTING PLAN
+
+### Phase 1: Internal Alpha (Week 9)
+**Participants:** You + 2-3 trusted colleagues  
+**Focus:** Core functionality, critical bugs  
+**Duration:** 1 week
+
+### Phase 2: Closed Beta (Week 10-12)
+**Participants:** 10-20 professional composers/editors  
+**Focus:** Real projects, workflow validation, UX feedback  
+**Duration:** 2-3 weeks
+
+### Phase 3: Open Beta (Week 13-14)
+**Participants:** 50-100 FilmSpotter Free users (invite only)  
+**Focus:** Scale testing, feature requests, pricing validation  
+**Duration:** 2 weeks
+
+### Launch: v1.0 Production (Week 15)
+**Rollout:** Gradual (10% → 50% → 100% over 1 week)  
+**Support:** Active monitoring, rapid bug fixes  
+**Marketing:** Announce to FilmSpotter Free users, social media, composer forums
+
+---
+
+## POST-LAUNCH ROADMAP
+
+### Month 1-3: Stabilization
+- Monitor usage, fix bugs
+- Collect user feedback
+- Optimize performance
+- Improve onboarding
+
+### Month 4-6: v1.1 Features
+- Multi-video tabs
+- Box.net support
+- Status tracking
+- Bulk operations
+- Activity log
+
+### Month 7-12: v2.0 Planning
+- Team workspaces
+- @mentions
+- Notifications
+- Mobile optimization
+- API for integrations
+
+---
+
+## QUESTIONS & OPEN ITEMS
+
+### Technical Questions
+- [ ] Firebase Firestore vs Realtime Database for annotations?
+- [ ] SVG vs Canvas for drawing? (Decision: SVG for scalability)
+- [ ] How to handle very large projects (1000+ markers)?
+- [ ] Offline mode needed in v1.0? (Decision: No, add later)
+
+### Business Questions
+- [ ] Exact pricing: $50 or $100/month?
+- [ ] Annual discount percentage?
+- [ ] Free trial period: 14 or 30 days?
+- [ ] Refund policy?
+- [ ] Educational/student discounts?
+
+### UX Questions
+- [ ] Annotation toolbar: Always visible or collapsible?
+- [ ] Default annotation color: Random or user-selectable?
+- [ ] Show all annotations or only at current timecode?
+- [ ] Annotation undo: Per-annotation or global undo stack?
+
+---
+
+## APPENDIX: TECHNOLOGY STACK
+
+### Frontend
+- **HTML5** - Structure
+- **CSS3** - Styling
+- **JavaScript (ES6+)** - Logic
+- **SVG** - Annotations
+- **HTML5 Video** - Playback
+
+### Backend
+- **Firebase Authentication** - User accounts
+- **Firestore** - Database
+- **Firebase Hosting** - Static hosting
+- **Firebase Functions** - Serverless (if needed)
+
+### Libraries
+- **None required!** - Pure vanilla JS
+- Optional: Chart.js for analytics (future)
+
+### Development Tools
+- **VS Code** - IDE
+- **Git/GitHub** - Version control
+- **Chrome DevTools** - Debugging
+- **Firebase Console** - Backend management
+
+### Infrastructure
+- **Cloudflare** - DNS + CDN
+- **Firebase** - Backend services
+- **Stripe** - Payments (future)
+
+---
+
+## CONTACT & FEEDBACK
+
+**Product Owner:** Andrew Morgan Smith  
+**Development Partner:** Claude (Anthropic)  
+
+**Feedback Channels:**
+- Email: [Your email]
+- FilmSpotter Free users: Thumbs down button
+- Beta testers: Direct email + weekly surveys
+
+---
+
+**End of Document**
+
+Last Updated: February 26, 2026  
+Version: 1.0  
+Status: Planning Complete - Ready to Build AudioReview First

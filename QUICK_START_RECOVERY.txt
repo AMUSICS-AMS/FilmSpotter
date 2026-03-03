@@ -1,0 +1,312 @@
+================================================================================
+FILMSPOTTER & AUDIOREVIEW - QUICK START RECOVERY
+================================================================================
+Date: February 26, 2026
+Purpose: Get Claude up to speed FAST if context window resets
+
+================================================================================
+STEP 1: WHO YOU ARE (30 seconds)
+================================================================================
+
+Name: Andrew Morgan Smith
+Business: Louisiana Scoring (S-Corp LLC since 2012)
+Profession: Professional film/TV composer (80+ feature films)
+Location: Youngsville, Louisiana
+
+You are the sole provider for your family and own publishing rights to 80+ scores.
+
+================================================================================
+STEP 2: WHAT YOU'RE BUILDING (1 minute)
+================================================================================
+
+PRODUCT 1: FilmSpotter Free
+- Status: LIVE at https://filmspotter.io
+- What: Video review tool (Dropbox-based, real-time collaboration)
+- Users: Composers, directors, editors reviewing films
+- Price: FREE forever (marketing tool)
+
+PRODUCT 2: AudioReview
+- Status: PLANNING (user research phase)
+- What: Audio review tool with waveform, regions, versions
+- Users: Composers, mixing engineers, podcast producers
+- Price: $20-50/month
+- Build Timeline: 10 weeks
+
+PRODUCT 3: FilmSpotter Pro
+- Status: PLANNING (roadmap complete)
+- What: FilmSpotter + user accounts + annotations + versions
+- Users: Professional post-production teams
+- Price: $50-100/month
+- Build Timeline: 6 weeks AFTER AudioReview (code reuse!)
+
+STRATEGY: Build AudioReview first, then clone 60% of code to FilmSpotter Pro.
+This saves 6 weeks vs building separately!
+
+================================================================================
+STEP 3: WHAT WE DID TODAY (1 minute)
+================================================================================
+
+COMPLETED:
+✅ Fixed 5 critical bugs in FilmSpotter Free
+✅ Added 7 quick-win improvements
+✅ Created 35-page FilmSpotter Pro roadmap
+✅ Files ready to deploy
+
+BUGS FIXED:
+1. Fullscreen (Safari/Firefox vendor prefixes)
+2. Username population (defaults to "Anonymous")
+3. Frame nudge lag (300ms debouncing)
+4. Timecode input (accepts HHMMSSFF or HH:MM:SS:FF)
+5. Arrow keys disabled when editing timecode
+
+IMPROVEMENTS ADDED:
+6. "Enter Session" button (was "Load Video")
+7. Delete confirmation ("Are you sure?")
+8. Default to "Note" (Edit, VFX, Global departments)
+9. Enter key to mark (like chat)
+10. Consistent transport symbols (no emoji)
+11. Matching frame button sizes
+12. Note first in Global dropdown
+
+FILES CREATED:
+- index.html (FilmSpotter Free v2.41 - DEPLOY THIS)
+- FilmSpotter_Pro_Roadmap.md (35 pages - complete feature plan)
+
+================================================================================
+STEP 4: IMMEDIATE TO-DO LIST (what's next)
+================================================================================
+
+THIS WEEK:
+[ ] Upload index.html to GitHub (amusics-ams/FilmSpotter repo)
+[ ] Test at filmspotter.io (should auto-deploy in 30-60 seconds)
+[ ] Share with 3-5 professional users for feedback
+[ ] Document any new bugs/requests
+[ ] Complete AudioReview user research (game composer friend)
+
+NEXT 2 WEEKS:
+[ ] Finalize AudioReview database structure
+[ ] Create AudioReview wireframes/mockups
+[ ] Start AudioReview development (Week 1: Auth + Projects)
+
+THIS MONTH:
+[ ] AudioReview Weeks 1-2: User accounts + Firebase
+[ ] AudioReview Weeks 3-4: Waveform player + markers
+
+================================================================================
+STEP 5: OUTSTANDING FEEDBACK (not yet implemented)
+================================================================================
+
+MEDIUM PRIORITY (Future FilmSpotter Free updates):
+- Threaded comments on markers (reply system)
+- Download markers on Leave Session
+- Follow events during playback fix
+- Collapse sidebar for more viewing space
+- Music In/Out regions with visual connection
+
+FILMSPOTTER PRO FEATURES (build after AudioReview):
+- Onscreen annotations (draw circles, arrows, boxes on video)
+- Version comparison (side-by-side player)
+- DaVinci Resolve XML export
+- Avid Media Composer export
+- Import markers (CSV, EDL, MIDI)
+- Multiple video tabs (Reel 1, 2, 3)
+- User accounts + project management
+
+ALL DETAILS: See FilmSpotter_Pro_Roadmap.md (35 pages)
+
+================================================================================
+STEP 6: KEY TECHNICAL DETAILS
+================================================================================
+
+FILMSPOTTER FREE (Current):
+- Live URL: https://filmspotter.io
+- GitHub Repo: amusics-ams/FilmSpotter (case-sensitive!)
+- Domain: filmspotter.io (Namecheap, $32/year)
+- Hosting: GitHub Pages (free)
+- Database: Firebase Firestore
+- Deploy: Push to main branch → auto-deploy in 30-60 seconds
+
+FIREBASE CONFIG (public, safe to share):
+apiKey: "AIzaSyDRuHGzq2Rsno5wN_WAAbRARQy1lfMZq9M"
+projectId: "filmspotter"
+authDomain: "filmspotter.firebaseapp.com"
+
+DNS SETUP (Namecheap):
+- 4 A Records pointing to GitHub Pages IPs
+- CNAME (www) → amusics-ams.github.io
+
+HTTPS: Auto-enabled via Let's Encrypt (free)
+
+================================================================================
+STEP 7: STRATEGIC DECISIONS MADE
+================================================================================
+
+✅ Build AudioReview FIRST (10 weeks), then FilmSpotter Pro (6 weeks)
+   Reason: Saves 6 weeks total, broader market, faster revenue
+
+✅ Keep FilmSpotter Free running forever (marketing tool)
+   Reason: User acquisition, feedback, brand awareness
+
+✅ Focus on professional market ($50-100/month for Pro)
+   Reason: Film scoring market contracting, need revenue
+
+✅ Use Firebase (not custom backend)
+   Reason: Real-time sync, authentication, low maintenance
+
+✅ S-Corp structure with product DBAs (not separate LLCs yet)
+   Reason: Simpler taxes, wait until $50k+/year per product
+
+================================================================================
+STEP 8: AUDIOREVIEW USER RESEARCH NEEDED
+================================================================================
+
+CRITICAL QUESTIONS (talk to game composer friend + others):
+1. Project hierarchy: Does "project" = whole game or one cue?
+2. Version organization: Tied to tracks or projects?
+3. Collaboration model: Who needs access? What permissions?
+4. Workflow: Linear (v1→v2→v3) or branching?
+5. Marker usage: Range vs point markers - which is primary?
+
+GOAL: Design database correctly BEFORE building (hard to migrate later)
+
+WHO TO INTERVIEW:
+- Game composer (pending)
+- Film composer colleague
+- Mixing engineer
+- Music producer
+
+================================================================================
+STEP 9: DEVELOPMENT WORKFLOW
+================================================================================
+
+OUR PROCESS:
+1. You describe bug/feature
+2. Claude edits HTML file using built-in tools
+3. Claude presents file for download
+4. You upload to GitHub
+5. Auto-deploys to filmspotter.io in 30-60 seconds
+6. You test live
+7. Iterate if needed
+
+TOOLS CLAUDE USES:
+- view (read files)
+- str_replace (edit files)
+- create_file (new files)
+- bash_tool (run commands)
+- present_files (deliver to you)
+
+FILES LOCATION:
+- Working: /home/claude/
+- Outputs: /mnt/user-data/outputs/
+- Your uploads: /mnt/user-data/uploads/
+
+================================================================================
+STEP 10: HOW TO RECOVER THIS SESSION
+================================================================================
+
+IF CLAUDE CONTEXT RESETS:
+
+1. Upload this file (QUICK_START_RECOVERY.txt)
+2. Say: "I'm Andrew from Louisiana Scoring. Read QUICK_START_RECOVERY.txt"
+3. Add: "Here's where we are now: [current status]"
+4. Claude will pick up and continue
+
+ESSENTIAL CONTEXT TO ALWAYS MENTION:
+- You're Andrew Morgan Smith (composer, 80+ film credits)
+- Louisiana Scoring (S-Corp LLC)
+- FilmSpotter Free is live at filmspotter.io
+- Building AudioReview first, then FilmSpotter Pro
+- Strategic: code reuse saves 6 weeks
+
+================================================================================
+STEP 11: BUSINESS CONTEXT
+================================================================================
+
+ENTITY:
+Andrew Morgan Smith Music, LLC (S-Corp)
+- Established: 2012
+- Location: Louisiana
+- Primary: Film/TV composing services
+- Products: FilmSpotter, AudioReview (DBAs)
+
+TAX STRATEGY:
+- One S-Corp, track products via QuickBooks classes
+- Consult CPA before forming separate LLCs
+- Threshold: ~$50k+/year per product to consider splitting
+
+INCOME SOURCES:
+- Film scoring (primary, but contracting)
+- Publishing royalties (80+ scores)
+- FilmSpotter Pro (future)
+- AudioReview (future)
+
+================================================================================
+STEP 12: COMPETITIVE LANDSCAPE
+================================================================================
+
+VIDEO REVIEW COMPETITORS:
+- Frame.io: $19-49/user, expensive, complex
+- Wipster: Good collaboration, expensive
+- Vimeo Review: Basic features, no music tools
+
+AUDIO REVIEW COMPETITORS:
+- Sessionwire: Real-time streaming, expensive
+- Source-Connect: High-quality, very expensive
+
+OUR EDGE:
+- Simpler, cheaper, music-focused
+- Music regions (unique feature)
+- Better for composers specifically
+
+================================================================================
+STEP 13: COMMON ISSUES & SOLUTIONS
+================================================================================
+
+"Username doesn't populate" → FIXED (defaults to Anonymous)
+"Fullscreen broken in Safari" → FIXED (vendor prefixes)
+"Frame nudge laggy" → FIXED (debounced)
+"Can't type 8 digits" → FIXED (accepts HHMMSSFF)
+"Arrow keys nudge while editing" → FIXED (disabled)
+"Deploy not updating" → Hard refresh (Cmd+Shift+R)
+"GitHub Actions failing" → Check repo settings, re-publish
+
+================================================================================
+STEP 14: IMPORTANT LINKS
+================================================================================
+
+FilmSpotter Live: https://filmspotter.io
+GitHub Repo: https://github.com/amusics-ams/FilmSpotter
+Firebase Console: https://console.firebase.google.com
+Namecheap DNS: https://namecheap.com
+Production Weekly: (lead generation for composing work)
+
+================================================================================
+STEP 15: FINAL CHECKLIST
+================================================================================
+
+BEFORE ENDING SESSION:
+✅ All files in /mnt/user-data/outputs/
+✅ Recovery doc created/updated
+✅ To-do list clear
+✅ Key decisions documented
+✅ Next steps identified
+
+SESSION COMPLETE WHEN:
+✅ You have files to deploy
+✅ You know next steps
+✅ Recovery doc ready
+✅ Questions answered
+
+================================================================================
+END OF QUICK START RECOVERY DOCUMENT
+================================================================================
+
+INSTRUCTIONS:
+Upload this file at start of any new Claude session.
+Say: "I'm Andrew, read QUICK_START_RECOVERY.txt and let's continue."
+
+Claude will be up to speed in 2 minutes!
+
+Created: February 26, 2026
+Version: 1.0
+Next Update: After AudioReview kickoff
