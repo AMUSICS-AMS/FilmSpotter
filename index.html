@@ -374,6 +374,12 @@
             border-radius: 4px;
             margin-bottom: 10px;
             border-left: 3px solid;
+            user-select: none; /* Prevent accidental text-selection highlight sticking */
+        }
+        
+        .tab-content .hit-point .timecode-editable,
+        .tab-content .hit-point-note {
+            user-select: text; /* Still allow selecting/editing where it matters */
         }
         
         .tab-content .hit-point-header {
@@ -1080,9 +1086,17 @@
                                         <input type="checkbox" name="usage" value="vis-inst" style="margin-right: 4px;">
                                         Visual Instrumental
                                     </label>
-                                    <label style="display: inline-block; cursor: pointer; font-size: 12px;">
+                                    <label style="display: inline-block; margin-right: 10px; cursor: pointer; font-size: 12px;">
                                         <input type="checkbox" name="usage" value="vis-vocal" style="margin-right: 4px;">
                                         Visual Vocal
+                                    </label>
+                                    <label style="display: inline-block; margin-right: 10px; cursor: pointer; font-size: 12px;">
+                                        <input type="checkbox" name="usage" value="title-credits" style="margin-right: 4px;">
+                                        Title Credits
+                                    </label>
+                                    <label style="display: inline-block; cursor: pointer; font-size: 12px;">
+                                        <input type="checkbox" name="usage" value="end-credits" style="margin-right: 4px;">
+                                        End Credits
                                     </label>
                                 </div>
                             </div>
@@ -1249,9 +1263,17 @@
                                 <input type="checkbox" name="edit-usage" value="vis-inst" style="margin-right: 4px;">
                                 Visual Instrumental
                             </label>
-                            <label style="display: inline-block; cursor: pointer;">
+                            <label style="display: inline-block; margin-right: 10px; cursor: pointer;">
                                 <input type="checkbox" name="edit-usage" value="vis-vocal" style="margin-right: 4px;">
                                 Visual Vocal
+                            </label>
+                            <label style="display: inline-block; margin-right: 10px; cursor: pointer;">
+                                <input type="checkbox" name="edit-usage" value="title-credits" style="margin-right: 4px;">
+                                Title Credits
+                            </label>
+                            <label style="display: inline-block; cursor: pointer;">
+                                <input type="checkbox" name="edit-usage" value="end-credits" style="margin-right: 4px;">
+                                End Credits
                             </label>
                         </div>
                     </div>
@@ -1363,6 +1385,10 @@
             </div>
             <div class="modal-body">
                 <p style="margin-bottom: 20px; color: #e0e0e0;">You are the host of this session. Choose an option:</p>
+                <button class="btn btn-secondary" onclick="app.quickDownloadMarkers()" style="width: 100%; margin-bottom: 10px; padding: 12px;">
+                    Download Markers (CSV)
+                    <div style="font-size: 11px; color: #cccccc; margin-top: 4px;">Save a copy before leaving</div>
+                </button>
                 <button class="btn btn-danger" onclick="app.endSessionForAll()" style="width: 100%; margin-bottom: 10px; padding: 12px;">
                     End Session For Everyone
                     <div style="font-size: 11px; color: #ffcccc; margin-top: 4px;">Deletes all markers, chat, and session data</div>
@@ -1387,6 +1413,9 @@
             </div>
             <div class="modal-body">
                 <p style="margin-bottom: 20px; color: #e0e0e0;">Are you sure you want to leave this session?</p>
+                <button class="btn btn-secondary" onclick="app.quickDownloadMarkers()" style="width: 100%; margin-bottom: 12px; padding: 10px;">
+                    Download Markers (CSV)
+                </button>
                 <div style="display: flex; gap: 10px;">
                     <button class="btn btn-danger" onclick="app.confirmLeaveAsGuest()" style="flex: 1;">Leave Session</button>
                     <button class="btn btn-secondary" onclick="app.closeGuestLeaveModal()" style="flex: 1;">Cancel</button>
@@ -3774,9 +3803,9 @@
                             }
                         }
                     } else {
-                        // Not current
-                        if (currentBg && currentBg.includes('102, 204')) {
-                            // Was highlighted, now fade to black (match list background)
+                        // Not current - clear ANY non-default background (fixes stuck highlights)
+                        if (currentBg && currentBg !== '' && currentBg !== 'rgb(26, 26, 26)' && currentBg !== '#1a1a1a') {
+                            // Was highlighted (by playback or accident), fade to default background
                             el.style.transition = 'background-color 1.5s ease-out';
                             el.style.backgroundColor = '#1a1a1a'; // Dark background to match
                             if (highlightChanged) {
@@ -4009,7 +4038,9 @@
                             const useAbbr = hp.usage === 'bg-inst' ? 'BI' : 
                                            hp.usage === 'bg-vocal' ? 'BV' : 
                                            hp.usage === 'vis-inst' ? 'VI' : 
-                                           hp.usage === 'vis-vocal' ? 'VV' : '';
+                                           hp.usage === 'vis-vocal' ? 'VV' : 
+                                           hp.usage === 'title-credits' ? 'TC' : 
+                                           hp.usage === 'end-credits' ? 'EC' : '';
                             
                             const parts = [];
                             if (catAbbr) parts.push(catAbbr);
@@ -4589,7 +4620,9 @@
                             'bg-inst': 'Background Instrumental',
                             'bg-vocal': 'Background Vocal',
                             'vis-inst': 'Visual Instrumental',
-                            'vis-vocal': 'Visual Vocal'
+                            'vis-vocal': 'Visual Vocal',
+                            'title-credits': 'Title Credits',
+                            'end-credits': 'End Credits'
                         };
                         
                         const category = hp.category ? categoryLabels[hp.category] : '';
@@ -4663,6 +4696,57 @@
                         this.downloadFile(midiBytes, `${safeProjectName} - Markers - FilmSpotter.mid`, 'audio/midi');
                     }, delay);
                 }
+            },
+            
+            quickDownloadMarkers() {
+                // One-click CSV download of all markers (used from Leave Session modals)
+                if (!this.storage.hitPoints || this.storage.hitPoints.length === 0) {
+                    this.showMessage('No markers to download', true);
+                    return;
+                }
+                
+                const projectName = this.sessionName || document.getElementById('projectNameInput')?.value?.trim() || 'FilmSpotter';
+                const safeProjectName = projectName.replace(/[^a-z0-9]/gi, '_');
+                
+                const sortedEvents = [...this.storage.hitPoints].sort((a, b) => a.time - b.time);
+                
+                const categoryLabels = {
+                    'source': 'Source Music',
+                    'underscore': 'Underscore'
+                };
+                const usageLabels = {
+                    'bg-inst': 'Background Instrumental',
+                    'bg-vocal': 'Background Vocal',
+                    'vis-inst': 'Visual Instrumental',
+                    'vis-vocal': 'Visual Vocal',
+                    'title-credits': 'Title Credits',
+                    'end-credits': 'End Credits'
+                };
+                
+                const csvContent = [
+                    ['Department', 'Type', 'Marker Label', 'Timecode', 'Category', 'Usage', 'Note', 'User'],
+                    ...sortedEvents.map(hp => {
+                        const dept = hp.department || 'music';
+                        const deptConfig = this.departments[dept];
+                        const markerConfig = deptConfig.markers.find(m => m.value === hp.type);
+                        const markerLabel = markerConfig ? markerConfig.label : hp.type;
+                        const category = hp.category ? (categoryLabels[hp.category] || hp.category) : '';
+                        const usage = hp.usage ? (usageLabels[hp.usage] || hp.usage) : '';
+                        return [
+                            deptConfig.name,
+                            hp.type || 'hit-point',
+                            markerLabel,
+                            hp.timecode,
+                            category,
+                            usage,
+                            `"${(hp.note || '').replace(/"/g, '""')}"`,
+                            hp.user || 'Unknown'
+                        ];
+                    })
+                ].map(row => row.join(',')).join('\n');
+                
+                this.downloadFile(csvContent, `${safeProjectName} - Events List - FilmSpotter.csv`, 'text/csv');
+                this.showMessage(`✓ Downloaded ${sortedEvents.length} markers`);
             },
             
             generateMIDI(events) {
