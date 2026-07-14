@@ -1125,6 +1125,13 @@
                                                style="width: 140px; padding: 6px; background: #1a1a1a; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0; font-family: monospace; font-size: 13px;"
                                                onchange="app.updateTimecodeOffset()" />
                                     </div>
+                                    
+                                    <div>
+                                        <label style="display: block; margin-bottom: 5px; font-size: 12px; color: #b0b0b0;">Drift Calibration:</label>
+                                        <button class="btn btn-secondary" onclick="app.calibrateDrift()" style="font-size: 12px; padding: 6px 12px;">Calibrate to Burn-in</button>
+                                        <button class="btn btn-secondary" onclick="app.resetCalibration()" id="resetCalibrationBtn" style="font-size: 12px; padding: 6px 12px; display: none;">Reset</button>
+                                        <div id="calibrationStatus" style="font-size: 11px; color: #808080; margin-top: 4px;">Not calibrated</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1399,6 +1406,8 @@
             detectedFPS: null,
             activeUsers: [],
             timecodeOffset: 0, // offset in seconds
+            driftCalibration: 1.0, // playback stretch factor (1.0 = no correction). Fixes AAC drift.
+            calibrationCapturedTime: null, // video time frozen when calibration panel opens
             useDropFrame: false, // drop-frame timecode mode
             currentDepartment: 'music', // Current department for marking
             eventsFilter: 'global', // Current filter for events display
@@ -2169,6 +2178,14 @@
                         const tc = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}:${String(frames).padStart(2, '0')}`;
                         document.getElementById('timecodeOffset').value = tc;
                     }
+                    
+                    // Load saved drift calibration
+                    const savedCalibration = localStorage.getItem('film-spotter-calibration-' + this.sessionId);
+                    if (savedCalibration) {
+                        this.driftCalibration = parseFloat(savedCalibration);
+                        this.updateCalibrationStatus();
+                        console.log(`🎯 Loaded drift calibration: ${this.driftCalibration}`);
+                    }
                 } catch (error) {
                     console.log('No existing session found');
                 }
@@ -2451,6 +2468,20 @@
                             this.updateTimecode();
                             console.log('🔄 Synced timecode offset from Firebase');
                         }
+                        
+                        // Sync drift calibration (all participants get corrected timecodes)
+                        if (data.driftCalibration !== undefined && data.driftCalibration !== this.driftCalibration) {
+                            this.driftCalibration = data.driftCalibration;
+                            localStorage.setItem('film-spotter-calibration-' + this.sessionId, this.driftCalibration.toString());
+                            this.updateTimecode();
+                            this.recalculateEventTimecodes();
+                            this.updateCalibrationStatus();
+                            const driftPercent = ((this.driftCalibration - 1) * 100).toFixed(4);
+                            if (this.driftCalibration !== 1.0) {
+                                this.showMessage(`✓ Drift calibration synced: ${driftPercent}% correction`);
+                            }
+                            console.log(`🔄 Synced drift calibration from Firebase: ${this.driftCalibration}`);
+                        }
                     }
                 }, (error) => {
                     console.error('❌ Session listener error:', error);
@@ -2623,6 +2654,14 @@
                                 document.getElementById('timecodeOffset').value = offsetTC;
                                 
                                 console.log(`✅ Loaded timecode offset: ${this.timecodeOffset} (${offsetTC})`);
+                            }
+                            
+                            // Load drift calibration (corrects AAC/stretched-file drift for everyone)
+                            if (data.driftCalibration !== undefined && data.driftCalibration !== 1.0) {
+                                this.driftCalibration = data.driftCalibration;
+                                localStorage.setItem('film-spotter-calibration-' + this.sessionId, this.driftCalibration.toString());
+                                this.updateCalibrationStatus();
+                                console.log(`✅ Loaded drift calibration: ${this.driftCalibration}`);
                             }
                             
                             // Load markers from subcollection
@@ -3267,8 +3306,21 @@
                 }
             },
             
+            formatTimecode(videoTime) {
+                // Convert raw video time to display timecode, applying drift calibration + offset.
+                // Used by the timeline hover tooltip and time displays.
+                const time = Math.max(0, (videoTime * this.driftCalibration) + this.timecodeOffset);
+                const hours = Math.floor(time / 3600);
+                const minutes = Math.floor((time % 3600) / 60);
+                const seconds = Math.floor(time % 60);
+                const frames = Math.min(Math.floor(this.fps) - 1, Math.round((time % 1) * this.fps));
+                const separator = this.useDropFrame ? ';' : ':';
+                return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}${separator}${String(frames).padStart(2, '0')}`;
+            },
+            
             updateTimecode() {
-                let time = Math.max(0, this.video.currentTime + this.timecodeOffset); // Prevent negative time
+                // Apply drift calibration (corrects for AAC/stretched files playing at variant speed)
+                let time = Math.max(0, (this.video.currentTime * this.driftCalibration) + this.timecodeOffset); // Prevent negative time
                 
                 if (this.useDropFrame && (this.fps === 29.97 || this.fps === 59.94)) {
                     // Drop-frame timecode calculation for 29.97 or 59.94
@@ -3471,8 +3523,8 @@
                 let updatedCount = 0;
                 this.storage.hitPoints.forEach(hp => {
                     if (!hp.manuallyEditedTimecode) {
-                        // Recalculate timecode from video time + offset
-                        const totalSeconds = hp.time + this.timecodeOffset;
+                        // Recalculate timecode from video time (with drift calibration) + offset
+                        const totalSeconds = (hp.time * this.driftCalibration) + this.timecodeOffset;
                         const hours = Math.floor(totalSeconds / 3600);
                         const minutes = Math.floor((totalSeconds % 3600) / 60);
                         const seconds = Math.floor(totalSeconds % 60);
@@ -3487,6 +3539,168 @@
                 if (updatedCount > 0) {
                     this.saveStoredData();
                     this.refreshHitPoints();
+                }
+            },
+            
+            calibrateDrift() {
+                // Calibrate timecode against burn-in to correct AAC/stretched-file drift.
+                // Shows a floating panel (bottom-right) so the burn-in stays visible while typing.
+                if (!this.video || !this.video.currentTime) {
+                    alert('Load a video and navigate to a frame with a visible burn-in timecode first.\n\nTip: Pick a frame late in the video for the most accurate calibration.');
+                    return;
+                }
+                
+                if (this.video.currentTime < 60) {
+                    if (!confirm('You are less than 1 minute into the video. Calibration is more accurate later in the video.\n\nCalibrate anyway?')) {
+                        return;
+                    }
+                }
+                
+                this.showCalibrationPanel();
+            },
+            
+            showCalibrationPanel() {
+                // Remove existing panel if any
+                this.hideCalibrationPanel();
+                
+                // Freeze the video time at the moment the panel opens
+                this.calibrationCapturedTime = this.video.currentTime;
+                this.video.pause();
+                
+                const panel = document.createElement('div');
+                panel.id = 'calibrationPanel';
+                panel.style.cssText = 'position: fixed; bottom: 80px; right: 20px; background: #1a1a1a; border: 1px solid #4a9eff; border-radius: 8px; padding: 16px; z-index: 10000; box-shadow: 0 4px 20px rgba(0,0,0,0.6); width: 280px;';
+                
+                panel.innerHTML = `
+                    <div style="font-size: 13px; font-weight: 600; color: #4a9eff; margin-bottom: 8px;">Calibrate to Burn-in</div>
+                    <div style="font-size: 11px; color: #b0b0b0; margin-bottom: 10px; line-height: 1.4;">Read the burn-in timecode on the paused frame and enter it below. The video stays visible.</div>
+                    <input type="text" id="calibrationTcInput" placeholder="HH:MM:SS:FF or 8 digits" 
+                           style="width: 100%; box-sizing: border-box; padding: 8px; background: #0d0d0d; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0; font-family: monospace; font-size: 14px; margin-bottom: 10px;" />
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn" onclick="app.applyCalibration()" style="flex: 1; font-size: 12px; padding: 6px;">Apply</button>
+                        <button class="btn btn-secondary" onclick="app.hideCalibrationPanel()" style="flex: 1; font-size: 12px; padding: 6px;">Cancel</button>
+                    </div>
+                `;
+                
+                document.body.appendChild(panel);
+                
+                // Focus the input, and allow Enter to apply / Escape to cancel
+                const input = document.getElementById('calibrationTcInput');
+                input.focus();
+                input.addEventListener('keydown', (e) => {
+                    e.stopPropagation(); // Don't trigger app keyboard shortcuts
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.applyCalibration();
+                    } else if (e.key === 'Escape') {
+                        e.preventDefault();
+                        this.hideCalibrationPanel();
+                    }
+                });
+            },
+            
+            hideCalibrationPanel() {
+                const panel = document.getElementById('calibrationPanel');
+                if (panel) panel.remove();
+            },
+            
+            applyCalibration() {
+                const inputEl = document.getElementById('calibrationTcInput');
+                if (!inputEl) return;
+                
+                let tc = inputEl.value.trim();
+                if (!tc) {
+                    inputEl.style.borderColor = '#ff4444';
+                    return;
+                }
+                
+                let hours, minutes, seconds, frames;
+                
+                if (/^\d{8}$/.test(tc)) {
+                    hours = parseInt(tc.substring(0, 2)) || 0;
+                    minutes = parseInt(tc.substring(2, 4)) || 0;
+                    seconds = parseInt(tc.substring(4, 6)) || 0;
+                    frames = parseInt(tc.substring(6, 8)) || 0;
+                } else {
+                    const parts = tc.split(/[:;]/);
+                    if (parts.length !== 4) {
+                        inputEl.style.borderColor = '#ff4444';
+                        this.showMessage('Invalid timecode format. Use HH:MM:SS:FF or 8 digits', true);
+                        return;
+                    }
+                    hours = parseInt(parts[0]) || 0;
+                    minutes = parseInt(parts[1]) || 0;
+                    seconds = parseInt(parts[2]) || 0;
+                    frames = parseInt(parts[3]) || 0;
+                }
+                
+                const burnInSeconds = hours * 3600 + minutes * 60 + seconds + (frames / this.fps);
+                const expectedElapsed = burnInSeconds - this.timecodeOffset; // Where burn-in says we are
+                // Use the frame time captured when the panel opened (video was paused then)
+                const actualElapsed = this.calibrationCapturedTime || this.video.currentTime;
+                
+                if (expectedElapsed <= 0) {
+                    inputEl.style.borderColor = '#ff4444';
+                    this.showMessage('That timecode is before the start offset. Check your Start Timecode Offset.', true);
+                    return;
+                }
+                
+                this.driftCalibration = expectedElapsed / actualElapsed;
+                
+                // Save to localStorage per session
+                localStorage.setItem('film-spotter-calibration-' + this.sessionId, this.driftCalibration.toString());
+                
+                // Sync to Firebase so all participants get corrected timecodes
+                this.syncCalibrationToFirebase();
+                
+                // Update everything
+                this.updateTimecode();
+                this.recalculateEventTimecodes();
+                this.updateCalibrationStatus();
+                this.hideCalibrationPanel();
+                
+                const driftPercent = ((this.driftCalibration - 1) * 100).toFixed(4);
+                this.showMessage(`✓ Calibrated! Drift correction: ${driftPercent}%`);
+                console.log(`🎯 Drift calibration set: ${this.driftCalibration} (${driftPercent}% correction)`);
+            },
+            
+            resetCalibration() {
+                this.driftCalibration = 1.0;
+                localStorage.removeItem('film-spotter-calibration-' + this.sessionId);
+                this.syncCalibrationToFirebase();
+                this.updateTimecode();
+                this.recalculateEventTimecodes();
+                this.updateCalibrationStatus();
+                this.showMessage('✓ Calibration reset');
+            },
+            
+            updateCalibrationStatus() {
+                const status = document.getElementById('calibrationStatus');
+                const resetBtn = document.getElementById('resetCalibrationBtn');
+                if (!status) return;
+                
+                if (this.driftCalibration !== 1.0) {
+                    const driftPercent = ((this.driftCalibration - 1) * 100).toFixed(4);
+                    status.textContent = `Calibrated: ${driftPercent}% correction`;
+                    status.style.color = '#4a9eff';
+                    if (resetBtn) resetBtn.style.display = 'inline-block';
+                } else {
+                    status.textContent = 'Not calibrated';
+                    status.style.color = '#808080';
+                    if (resetBtn) resetBtn.style.display = 'none';
+                }
+            },
+            
+            async syncCalibrationToFirebase() {
+                if (this.db && this.sessionId) {
+                    try {
+                        await this.db.collection('sessions').doc(this.sessionId).set({
+                            driftCalibration: this.driftCalibration
+                        }, { merge: true });
+                        console.log(`🔄 Synced calibration to Firebase: ${this.driftCalibration}`);
+                    } catch (error) {
+                        console.error('❌ Error syncing calibration:', error);
+                    }
                 }
             },
             
@@ -4108,7 +4322,7 @@
                 const targetTime = hours * 3600 + minutes * 60 + seconds + (frames / this.fps);
                 
                 // Subtract the offset to get the actual video time
-                const videoTime = targetTime - this.timecodeOffset;
+                const videoTime = (targetTime - this.timecodeOffset) / this.driftCalibration;
                 
                 if (videoTime < 0 || videoTime > this.video.duration) {
                     alert('Timecode is outside video duration');
