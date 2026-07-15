@@ -2521,8 +2521,24 @@
                 // Listen for PARTICIPANTS changes
                 const participantsUnsubscribe = sessionRef.collection('participants').onSnapshot((snapshot) => {
                     const participants = [];
-                    const now = Date.now();
                     let foundMyself = false;
+                    
+                    // Helper: normalize lastSeen (handles server Timestamp objects, legacy
+                    // numbers, and null pending-server-ack timestamps)
+                    const toMillisSafe = (ls) => {
+                        if (!ls) return null; // pending server timestamp = just wrote = active
+                        if (typeof ls.toMillis === 'function') return ls.toMillis();
+                        if (typeof ls === 'number') return ls;
+                        return null;
+                    };
+                    
+                    // First pass: find the NEWEST heartbeat (server time). Comparing
+                    // server-time to server-time eliminates client clock skew entirely.
+                    let newestSeen = 0;
+                    snapshot.forEach(doc => {
+                        const t = toMillisSafe(doc.data().lastSeen);
+                        if (t && t > newestSeen) newestSeen = t;
+                    });
                     
                     snapshot.forEach(doc => {
                         const data = doc.data();
@@ -2538,23 +2554,22 @@
                             console.log(`🔐 My permissions updated: isHost=${this.isHost}, canMark=${this.canMark}, canChat=${this.canChat}`);
                         }
                         
-                        // Handle lastSeen timestamp (now using client Date.now())
-                        const lastSeenTime = data.lastSeen || 0;
+                        const lastSeenTime = toMillisSafe(data.lastSeen);
                         
-                        // If no valid timestamp, assume active (just joined)
-                        if (lastSeenTime === 0) {
+                        // No/pending timestamp = just joined or just heartbeat = active
+                        if (lastSeenTime === null) {
                             console.log(`✅ ${data.name} active (just joined)`);
                             participants.push(data);
                             return;
                         }
                         
-                        const timeSinceLastSeen = now - lastSeenTime;
-                        
-                        // 30-second window (tighter now that timestamps are reliable)
-                        if (timeSinceLastSeen < 30000 && timeSinceLastSeen > -5000) {
+                        // Active if within 35s of the newest heartbeat in the session
+                        // (heartbeats fire every 10s, so 35s = ~3 missed beats = stale)
+                        const behindNewest = newestSeen - lastSeenTime;
+                        if (behindNewest < 35000) {
                             participants.push(data);
                         } else {
-                            console.log(`⏰ ${data.name} inactive: ${Math.round(timeSinceLastSeen/1000)}s ago`);
+                            console.log(`⏰ ${data.name} inactive: ${Math.round(behindNewest/1000)}s behind newest heartbeat`);
                         }
                     });
                     
@@ -2927,58 +2942,78 @@
                 this.myParticipantId = participantId;
                 
                 try {
-                    const now = Date.now();
+                    // Check if WE already have a participant doc (page refresh / reconnect).
+                    // CRITICAL: preserves host status + permissions instead of demoting on rejoin.
+                    const myDocRef = this.db.collection('sessions').doc(this.sessionId)
+                        .collection('participants').doc(participantId);
+                    const existingDoc = await myDocRef.get();
                     
-                    // Check if this is the first participant (they become host)
-                    const participantsSnapshot = await this.db.collection('sessions').doc(this.sessionId)
-                        .collection('participants').get();
-                    
-                    const isFirstParticipant = participantsSnapshot.empty;
-                    
-                    // Check session settings for allowAllControl
-                    const sessionDoc = await this.db.collection('sessions').doc(this.sessionId).get();
-                    const allowAllControl = sessionDoc.exists ? sessionDoc.data().allowAllControl : false;
-                    
-                    // Host always gets all permissions
-                    // Guests get permissions based on allowAllControl setting
-                    const permissions = isFirstParticipant ? {
-                        canMark: true,
-                        canChat: true,
-                        canControl: true
-                    } : {
-                        canMark: allowAllControl,
-                        canChat: allowAllControl,
-                        canControl: allowAllControl
-                    };
-                    
-                    await this.db.collection('sessions').doc(this.sessionId)
-                        .collection('participants').doc(participantId).set({
+                    if (existingDoc.exists) {
+                        // REJOINING - keep existing role and permissions, just refresh presence
+                        const existing = existingDoc.data();
+                        await myDocRef.update({
+                            name: this.userName,
+                            lastSeen: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        
+                        this.isHost = existing.isHost || false;
+                        this.canMark = existing.canMark !== false;
+                        this.canChat = existing.canChat !== false;
+                        this.canControl = existing.canControl !== false;
+                        
+                        console.log(`🔁 Rejoined as existing participant: ${this.userName} - Host: ${this.isHost} (role preserved)`);
+                    } else {
+                        // NEW participant - compute role and permissions
+                        // Check if this is the first participant (they become host)
+                        const participantsSnapshot = await this.db.collection('sessions').doc(this.sessionId)
+                            .collection('participants').get();
+                        
+                        const isFirstParticipant = participantsSnapshot.empty;
+                        
+                        // Check session settings for allowAllControl
+                        const sessionDoc = await this.db.collection('sessions').doc(this.sessionId).get();
+                        const allowAllControl = sessionDoc.exists ? sessionDoc.data().allowAllControl : false;
+                        
+                        // Host always gets all permissions
+                        // Guests get permissions based on allowAllControl setting
+                        const permissions = isFirstParticipant ? {
+                            canMark: true,
+                            canChat: true,
+                            canControl: true
+                        } : {
+                            canMark: allowAllControl,
+                            canChat: allowAllControl,
+                            canControl: allowAllControl
+                        };
+                        
+                        await myDocRef.set({
                             id: participantId,
                             name: this.userName,
-                            joinedAt: now,
-                            lastSeen: now,
+                            joinedAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            lastSeen: firebase.firestore.FieldValue.serverTimestamp(),
                             isHost: isFirstParticipant,
                             ...permissions
                         }, { merge: true });
-                    
-                    // Store our role locally
-                    this.isHost = isFirstParticipant;
-                    this.canMark = permissions.canMark;
-                    this.canChat = permissions.canChat;
-                    this.canControl = permissions.canControl;
-                    
-                    console.log(`✅ Registered as participant: ${this.userName} (${participantId}) - Host: ${isFirstParticipant}, Permissions:`, permissions);
+                        
+                        // Store our role locally
+                        this.isHost = isFirstParticipant;
+                        this.canMark = permissions.canMark;
+                        this.canChat = permissions.canChat;
+                        this.canControl = permissions.canControl;
+                        
+                        console.log(`✅ Registered as participant: ${this.userName} (${participantId}) - Host: ${isFirstParticipant}, Permissions:`, permissions);
+                    }
                     
                     // Clear any existing heartbeat
                     if (this.participantHeartbeat) {
                         clearInterval(this.participantHeartbeat);
                     }
-                    // Update lastSeen every 10 seconds to show active status
+                    // Update lastSeen every 10 seconds to show active status (SERVER time - no clock skew)
                     this.participantHeartbeat = setInterval(async () => {
                         try {
                             await this.db.collection('sessions').doc(this.sessionId)
                                 .collection('participants').doc(participantId).update({
-                                    lastSeen: Date.now()
+                                    lastSeen: firebase.firestore.FieldValue.serverTimestamp()
                                 });
                             console.log(`💓 Heartbeat sent for ${this.userName}`);
                         } catch (error) {
@@ -3003,14 +3038,27 @@
                         .collection('participants').get();
                     
                     const participants = [];
-                    const now = Date.now();
+                    
+                    const toMillisSafe = (ls) => {
+                        if (!ls) return null;
+                        if (typeof ls.toMillis === 'function') return ls.toMillis();
+                        if (typeof ls === 'number') return ls;
+                        return null;
+                    };
+                    
+                    // Skew-free: compare against newest server heartbeat, not local clock
+                    let newestSeen = 0;
+                    snapshot.forEach(doc => {
+                        const t = toMillisSafe(doc.data().lastSeen);
+                        if (t && t > newestSeen) newestSeen = t;
+                    });
                     
                     snapshot.forEach(doc => {
                         const data = doc.data();
-                        const lastSeenTime = data.lastSeen || 0;
+                        const lastSeenTime = toMillisSafe(data.lastSeen);
                         
-                        // If no valid timestamp or within 30 seconds, consider active
-                        if (lastSeenTime === 0 || (now - lastSeenTime < 30000 && now - lastSeenTime > -5000)) {
+                        // Pending/no timestamp = active; otherwise within 35s of newest heartbeat
+                        if (lastSeenTime === null || (newestSeen - lastSeenTime) < 35000) {
                             participants.push(data);
                         }
                     });
