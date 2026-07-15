@@ -901,7 +901,7 @@
         </div>
         
         <!-- Beta Banner -->
-        <div style="background: #1a1a1a; border-bottom: 1px solid #404040; padding: 8px 20px; display: flex; justify-content: center; align-items: center; gap: 20px; font-size: 13px;">
+        <div style="background: #1a1a1a; border-bottom: 1px solid #404040; padding: 8px 20px; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 12px 20px; font-size: 13px;">
             <span style="color: #ff6600; font-weight: 600;">BETA SOFTWARE</span>
             <span style="color: #606060;">|</span>
             <a href="https://forms.gle/XEVTjaSiZgPwwdwj9" target="_blank" style="color: #4a9eff; text-decoration: none;">Give Feedback</a>
@@ -909,6 +909,13 @@
             <a href="TERMS_OF_SERVICE.txt" target="_blank" style="color: #808080; text-decoration: none;">Terms of Service</a>
             <span style="color: #606060;">|</span>
             <a href="PRIVACY_POLICY.txt" target="_blank" style="color: #808080; text-decoration: none;">Privacy Policy</a>
+            <span style="color: #606060;">|</span>
+            <span id="proWaitlistArea" style="display: inline-flex; align-items: center; gap: 6px;">
+                <span style="color: #b0b0b0;">FilmSpotter Pro coming soon:</span>
+                <input type="email" id="proWaitlistEmail" placeholder="your@email.com" 
+                       style="padding: 4px 8px; background: #0d0d0d; border: 1px solid #404040; border-radius: 4px; color: #e0e0e0; font-size: 12px; width: 170px;" />
+                <button onclick="app.joinProWaitlist()" style="padding: 4px 10px; background: #0066cc; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Notify Me</button>
+            </span>
         </div>
         
         <div class="main-content">
@@ -1548,6 +1555,11 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 const urlSessionId = urlParams.get('session');
                 
+                // If already on the Pro waitlist, don't nag
+                if (localStorage.getItem('film-spotter-pro-waitlist')) {
+                    this.markWaitlistJoined();
+                }
+                
                 // Determine if this is a guest joining via link
                 const isGuest = !!urlSessionId;
                 this.isGuestJoin = isGuest; // Persist: guests must NOT write session settings
@@ -1707,6 +1719,47 @@
                 } else {
                     sessionIdInput.textContent = 'Enter session name above';
                     copyBtn.style.display = 'none';
+                }
+            },
+            
+            async joinProWaitlist() {
+                const input = document.getElementById('proWaitlistEmail');
+                const email = input.value.trim().toLowerCase();
+                
+                // Basic email validation
+                if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                    input.style.borderColor = '#ff4444';
+                    this.showMessage('Please enter a valid email address', true);
+                    return;
+                }
+                
+                if (!this.db) {
+                    this.showMessage('⚠️ Connection unavailable, please try again', true);
+                    return;
+                }
+                
+                try {
+                    // Email as doc ID = automatic dedup (re-submitting just updates timestamp)
+                    await this.db.collection('pro_waitlist').doc(email).set({
+                        email: email,
+                        signedUpAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        source: 'beta-banner'
+                    });
+                    
+                    localStorage.setItem('film-spotter-pro-waitlist', email);
+                    this.markWaitlistJoined();
+                    this.showMessage('✓ You are on the Pro launch list!');
+                    console.log(`📧 Pro waitlist signup: ${email}`);
+                } catch (error) {
+                    console.error('❌ Waitlist signup error:', error);
+                    this.showMessage('⚠️ Signup failed, please try again later', true);
+                }
+            },
+            
+            markWaitlistJoined() {
+                const area = document.getElementById('proWaitlistArea');
+                if (area) {
+                    area.innerHTML = '<span style="color: #4a9eff;">✓ You are on the Pro launch list</span>';
                 }
             },
             
