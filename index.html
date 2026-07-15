@@ -3808,6 +3808,28 @@
                 this.followEvents = document.getElementById('followEvents').checked;
                 if (this.followEvents) {
                     this.showMessage('📍 Following events - will auto-scroll');
+                    
+                    // Immediately scroll to the current event (fixes: engaging Follow
+                    // Events mid-playback did nothing until the NEXT event change)
+                    const currentTime = this.video ? this.video.currentTime : 0;
+                    const sortedEvents = [...this.storage.hitPoints].sort((a, b) => a.time - b.time);
+                    let currentEvent = null;
+                    for (let i = sortedEvents.length - 1; i >= 0; i--) {
+                        if (currentTime >= sortedEvents[i].time - 0.2) {
+                            currentEvent = sortedEvents[i];
+                            break;
+                        }
+                    }
+                    
+                    if (currentEvent) {
+                        const currentElement = document.querySelector(`.hit-point[data-id="${currentEvent.id}"]`);
+                        const container = document.getElementById('hitpointsTab');
+                        if (currentElement && container) {
+                            const headerOffset = 150;
+                            const scrollPosition = currentElement.offsetTop - (container.clientHeight / 2) + (currentElement.clientHeight / 2) - headerOffset;
+                            container.scrollTo({ top: Math.max(0, scrollPosition), behavior: 'smooth' });
+                        }
+                    }
                 } else {
                     this.showMessage('Follow events disabled');
                 }
@@ -3854,7 +3876,10 @@
                     const timecodeSpan = el.querySelector('.timecode-editable');
                     if (!timecodeSpan) return;
                     
-                    const isCurrentEvent = currentEvent && timecodeSpan.textContent === currentEvent.timecode;
+                    // Match by unique marker ID (NOT timecode text - multiple markers
+                    // can share a timecode in multi-user sessions, which caused several
+                    // markers to highlight at once and Follow Events to jump around)
+                    const isCurrentEvent = currentEvent && el.dataset.id === String(currentEvent.id);
                     const currentBg = el.style.backgroundColor;
                     
                     if (isCurrentEvent) {
@@ -3892,10 +3917,9 @@
                 // Auto-scroll to current event if Follow Events is enabled
                 if (this.followEvents && highlightChanged && currentEvent) {
                     console.log(`📍 Follow Events: Looking for ${currentEvent.timecode}`);
-                    const currentElement = Array.from(eventElements).find(el => {
-                        const timecodeSpan = el.querySelector('.timecode-editable');
-                        return timecodeSpan && timecodeSpan.textContent === currentEvent.timecode;
-                    });
+                    const currentElement = Array.from(eventElements).find(el => 
+                        el.dataset.id === String(currentEvent.id)
+                    );
                     
                     if (currentElement) {
                         // Get the ACTUAL scrollable container (tab-content parent, not hitPointsList)
@@ -4123,7 +4147,7 @@
                         }
                         
                         return `
-                            <div class="hit-point" style="border-left-color: ${color};">
+                            <div class="hit-point" data-id="${hp.id}" style="border-left-color: ${color};">
                                 <div class="hit-point-header">
                                     <span class="hit-point-time" style="color: ${color};">
                                         <span class="marker-label" style="background: ${color}33;">${shortLabel}</span>
