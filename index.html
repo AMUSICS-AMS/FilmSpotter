@@ -1550,6 +1550,7 @@
                 
                 // Determine if this is a guest joining via link
                 const isGuest = !!urlSessionId;
+                this.isGuestJoin = isGuest; // Persist: guests must NOT write session settings
                 
                 if (isGuest) {
                     // Show guest screen, hide host screen
@@ -2783,7 +2784,15 @@
                 const session = { videoUrl, projectName };
                 localStorage.setItem('film-spotter-session', JSON.stringify(session));
                 
-                // Save to Firebase if connected
+                // Save to Firebase if connected.
+                // CRITICAL: guests joining via link must NOT write session settings -
+                // they would overwrite allowAllControl/password/sessionName with their
+                // own hidden form's defaults (this caused "only the first guest gets
+                // permissions": each joining guest reset allowAllControl to false).
+                if (this.isGuestJoin) {
+                    console.log('👤 Guest join - skipping session settings write');
+                    return;
+                }
                 if (this.db && this.sessionId) {
                     try {
                         const sessionName = document.getElementById('sessionNameInput').value.trim();
