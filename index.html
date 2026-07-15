@@ -2787,12 +2787,15 @@
                 try {
                     const videoUrl = document.getElementById('videoUrlInput').value.trim();
                     const projectName = document.getElementById('projectNameInput').value.trim();
-                    const userName = document.getElementById('userNameInput').value.trim() || 'Anonymous';
+                    const inputName = document.getElementById('userNameInput').value.trim();
+                    // Use the host-screen input if filled; otherwise PRESERVE an already-set
+                    // name (guests set this.userName via the guest join screen before this
+                    // runs - do NOT stomp it with 'Anonymous'); else fall back to Anonymous.
+                    const userName = inputName || this.userName || 'Anonymous';
                     const sessionName = document.getElementById('sessionNameInput').value.trim();
                     
                     console.log('🎬 Loading video...', { videoUrl, projectName, userName, sessionName });
                     
-                    // ALWAYS set username (even if empty, use Anonymous)
                     this.userName = userName;
                     localStorage.setItem('film-spotter-username', userName);
                     
@@ -2937,8 +2940,16 @@
             async registerParticipant() {
                 if (!this.db || !this.sessionId || !this.userName) return;
                 
-                // Use consistent ID based on username (not timestamp)
-                const participantId = `user-${this.userName.toLowerCase().replace(/[^a-z0-9]/g, '-')}`;
+                // Use consistent ID based on username + a per-browser suffix.
+                // The suffix persists in localStorage so refresh-rejoin still matches
+                // the same doc, but two different people with the same name (or two
+                // browsers) no longer collapse into one participant.
+                let browserSuffix = localStorage.getItem('film-spotter-browser-id');
+                if (!browserSuffix) {
+                    browserSuffix = Math.random().toString(36).substr(2, 6);
+                    localStorage.setItem('film-spotter-browser-id', browserSuffix);
+                }
+                const participantId = `user-${this.userName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${browserSuffix}`;
                 this.myParticipantId = participantId;
                 
                 try {
