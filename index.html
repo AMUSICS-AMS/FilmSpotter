@@ -1636,6 +1636,17 @@
                 this.userName = userName;
                 localStorage.setItem('film-spotter-username', userName);
                 
+                // CRITICAL: sync the typed guest name into the (hidden) host-screen name
+                // field. loadUserName() pre-fills that field with a stale localStorage
+                // name on page load, and loadVideo() reads it - without this sync, the
+                // stale pre-fill overrides the name the guest just typed.
+                const hostNameInput = document.getElementById('userNameInput');
+                if (hostNameInput) hostNameInput.value = userName;
+                
+                // Update header badge immediately
+                const badge = document.getElementById('userBadge');
+                if (badge) badge.textContent = userName;
+                
                 // Load the session data from Firebase to check password
                 try {
                     const sessionRef = this.db.collection('sessions').doc(this.sessionId);
@@ -2951,6 +2962,7 @@
                 }
                 const participantId = `user-${this.userName.toLowerCase().replace(/[^a-z0-9]/g, '-')}-${browserSuffix}`;
                 this.myParticipantId = participantId;
+                console.log(`🪪 Registering with participantId: ${participantId} (name: "${this.userName}", suffix: ${browserSuffix})`);
                 
                 try {
                     // Check if WE already have a participant doc (page refresh / reconnect).
