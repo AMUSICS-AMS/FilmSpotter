@@ -1446,6 +1446,7 @@
             canMark: true, // Can this user mark events
             canChat: true, // Can this user send chat messages
             canControl: true, // Can this user control playback
+            canCopyLink: true, // Can this user copy/share the session link
             sessionPassword: null, // Session password if set
             allowAllControl: true, // Whether all users can control
             userRole: 'viewer', // current user's role: 'host', 'co-host', 'viewer'
@@ -1711,6 +1712,13 @@
             copySessionLink() {
                 if (!this.sessionId) {
                     this.showMessage('⚠️ No active session to share', true);
+                    return;
+                }
+                
+                // Permission check (hosts always can; defaults to allowed for guests
+                // unless the host revoked it)
+                if (!this.isHost && this.canCopyLink === false) {
+                    this.showMessage('⛔ The host has disabled link sharing for you', true);
                     return;
                 }
                 
@@ -2562,6 +2570,7 @@
                             this.canMark = data.canMark !== false;
                             this.canChat = data.canChat !== false;
                             this.canControl = data.canControl !== false;
+                            this.canCopyLink = data.canCopyLink !== false;
                             console.log(`🔐 My permissions updated: isHost=${this.isHost}, canMark=${this.canMark}, canChat=${this.canChat}`);
                         }
                         
@@ -2647,6 +2656,9 @@
                     const controlBtnStyle = p.canControl 
                         ? 'background: #0066cc; color: white;' 
                         : 'background: #555; color: #999;';
+                    const copyLinkBtnStyle = p.canCopyLink !== false 
+                        ? 'background: #0066cc; color: white;' 
+                        : 'background: #555; color: #999;';
                     
                     return `
                         <div style="padding: 10px; background: #2d2d2d; border-radius: 4px; margin-bottom: 8px;">
@@ -2658,7 +2670,8 @@
                                     <div style="font-size: 11px; color: #808080;">
                                         ${p.canControl ? '✓ Can control' : '✗ No control'} • 
                                         ${p.canMark ? '✓ Can mark' : '✗ View only'} • 
-                                        ${p.canChat ? '✓ Can chat' : '✗ Muted'}
+                                        ${p.canChat ? '✓ Can chat' : '✗ Muted'} • 
+                                        ${p.canCopyLink !== false ? '✓ Can share link' : '✗ No sharing'}
                                     </div>
                                 </div>
                                 ${showControls ? `
@@ -2667,6 +2680,7 @@
                                         <button onclick="app.togglePermission('${p.id}', 'control')" style="padding: 4px 8px; font-size: 11px; ${controlBtnStyle} border: none; border-radius: 3px; cursor: pointer;" title="Toggle Playback Control">⏯</button>
                                         <button onclick="app.togglePermission('${p.id}', 'mark')" style="padding: 4px 8px; font-size: 11px; ${markBtnStyle} border: none; border-radius: 3px; cursor: pointer;" title="Toggle Mark Permission">📍</button>
                                         <button onclick="app.togglePermission('${p.id}', 'chat')" style="padding: 4px 8px; font-size: 11px; ${chatBtnStyle} border: none; border-radius: 3px; cursor: pointer;" title="Toggle Chat Permission">💬</button>
+                                        <button onclick="app.togglePermission('${p.id}', 'copylink')" style="padding: 4px 8px; font-size: 11px; ${copyLinkBtnStyle} border: none; border-radius: 3px; cursor: pointer;" title="Toggle Share Link Permission">🔗</button>
                                         <button onclick="app.kickUser('${p.id}')" style="padding: 4px 8px; font-size: 11px; background: #cc0000; color: white; border: none; border-radius: 3px; cursor: pointer;" title="Kick User">✕</button>
                                     </div>
                                 ` : ''}
@@ -2983,6 +2997,7 @@
                         this.canMark = existing.canMark !== false;
                         this.canChat = existing.canChat !== false;
                         this.canControl = existing.canControl !== false;
+                        this.canCopyLink = existing.canCopyLink !== false;
                         
                         console.log(`🔁 Rejoined as existing participant: ${this.userName} - Host: ${this.isHost} (role preserved)`);
                     } else {
@@ -5046,9 +5061,17 @@
                     } else if (permission === 'control') {
                         permField = 'canControl';
                         permName = 'playback control';
+                    } else if (permission === 'copylink') {
+                        permField = 'canCopyLink';
+                        permName = 'link sharing';
                     }
                     
-                    const newValue = !participantData[permField];
+                    // canCopyLink defaults to true when undefined, so toggle from the
+                    // effective value rather than the raw (possibly undefined) field
+                    const currentValue = permField === 'canCopyLink' 
+                        ? participantData[permField] !== false 
+                        : !!participantData[permField];
+                    const newValue = !currentValue;
                     
                     await this.db.collection('sessions').doc(this.sessionId)
                         .collection('participants').doc(participantId).update({
