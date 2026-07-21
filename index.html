@@ -1551,6 +1551,22 @@
                     this.showMessage('⚠️ Firebase connection failed - using local storage only', true);
                 }
                 
+                // Probe ACTUAL Firestore network connectivity. Ad/tracker blockers
+                // (notably Opera's built-in blocker) let the SDK initialize but
+                // silently block googleapis.com - the app renders but never syncs.
+                this.checkFirebaseConnectivity();
+                
+                // Firefox audio codec detection: Firefox cannot decode PCM audio in
+                // MP4/MOV containers (plays fine in Chrome/Safari but is SILENT in
+                // Firefox). mozHasAudio is a Firefox-only API that reports whether
+                // a decodable audio track exists.
+                this.video.addEventListener('loadeddata', () => {
+                    if (typeof this.video.mozHasAudio !== 'undefined' && this.video.mozHasAudio === false) {
+                        this.showMessage('⚠️ Firefox cannot decode this video\'s audio (often PCM audio in MP4). Try Chrome or Safari, or ask for an export with AAC audio.', true);
+                        console.warn('🔇 Firefox reports no decodable audio track (mozHasAudio=false). Likely PCM-in-MP4 codec issue.');
+                    }
+                });
+                
                 // Check URL for session parameter
                 const urlParams = new URLSearchParams(window.location.search);
                 const urlSessionId = urlParams.get('session');
@@ -1720,6 +1736,30 @@
                     sessionIdInput.textContent = 'Enter session name above';
                     copyBtn.style.display = 'none';
                 }
+            },
+            
+            async checkFirebaseConnectivity() {
+                if (!this.db) return;
+                try {
+                    // Race a tiny real read against a timeout. Blocked requests
+                    // (ad blockers) typically hang rather than error.
+                    const probe = this.db.collection('sessions').doc('connectivity-probe').get();
+                    const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 8000));
+                    await Promise.race([probe, timeout]);
+                    console.log('✅ Firestore connectivity confirmed');
+                } catch (error) {
+                    console.error('❌ Firestore unreachable (likely blocked):', error);
+                    this.showConnectivityWarning();
+                }
+            },
+            
+            showConnectivityWarning() {
+                if (document.getElementById('connectivityWarning')) return;
+                const banner = document.createElement('div');
+                banner.id = 'connectivityWarning';
+                banner.style.cssText = 'position: fixed; top: 0; left: 0; right: 0; background: #cc6600; color: white; padding: 10px 20px; z-index: 10001; font-size: 13px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.4);';
+                banner.innerHTML = 'Real-time sync is being blocked, likely by an ad or tracker blocker (common with Opera\'s built-in blocker). Sessions will not sync. Please allow <b>googleapis.com</b> for this site or disable blocking, then reload. <button onclick="location.reload()" style="margin-left: 10px; padding: 3px 10px; border: none; border-radius: 3px; cursor: pointer; background: white; color: #cc6600; font-weight: 600;">Reload</button> <button onclick="this.parentElement.remove()" style="margin-left: 4px; padding: 3px 10px; border: 1px solid white; border-radius: 3px; cursor: pointer; background: transparent; color: white;">Dismiss</button>';
+                document.body.prepend(banner);
             },
             
             async joinProWaitlist() {
