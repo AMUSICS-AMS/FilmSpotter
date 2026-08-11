@@ -1068,6 +1068,13 @@
                         
                         <div id="musicMetadata" class="music-metadata hidden">
                             <div style="margin-top: 10px; padding: 10px; background: #1a1a1a; border-radius: 4px;">
+                                <div style="margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #2d2d2d;">
+                                    <label style="display: inline-flex; align-items: center; cursor: pointer; font-size: 12px; gap: 6px;">
+                                        <input type="checkbox" id="autoIterateCues" checked onchange="app.toggleAutoIterate()" style="margin: 0;">
+                                        Auto-iterate cues
+                                    </label>
+                                    <span id="autoIterateStatus" style="font-size: 11px; color: #4a9eff; margin-left: 10px;">Next: 1m01_In</span>
+                                </div>
                                 <div style="margin-bottom: 8px;">
                                     <div style="font-size: 11px; color: #b0b0b0; margin-bottom: 4px;">Category:</div>
                                     <label style="display: inline-block; margin-right: 15px; cursor: pointer; font-size: 12px;">
@@ -1454,6 +1461,10 @@
             canChat: true, // Can this user send chat messages
             canControl: true, // Can this user control playback
             canCopyLink: true, // Can this user copy/share the session link
+            autoIterateCues: true, // Auto-alternate Music In/Out + iterate cue names
+            cuePrefix: '1m', // Reel/movie prefix, adopted from what the user types
+            nextCueNumber: 1, // Next cue number to use
+            nextCueIsIn: true, // Whether next music marker is an In (vs Out)
             sessionPassword: null, // Session password if set
             allowAllControl: true, // Whether all users can control
             userRole: 'viewer', // current user's role: 'host', 'co-host', 'viewer'
@@ -3605,6 +3616,10 @@
                 // Show/hide music metadata based on department
                 if (selectedDept === 'music') {
                     musicMetadata.classList.remove('hidden');
+                    // Kick off auto-iterate pre-fill (e.g. "1m01_In" ready to go)
+                    if (this.autoIterateCues) {
+                        setTimeout(() => this.applyAutoCue(), 0); // after dropdown repopulates below
+                    }
                 } else {
                     musicMetadata.classList.add('hidden');
                 }
@@ -4204,7 +4219,73 @@
                     document.querySelectorAll('input[name="usage"]').forEach(cb => cb.checked = false);
                 }
                 
+                // Auto-iterate cues: alternate Music In/Out and pre-fill next cue name
+                this.advanceAutoCue(department, markerType, note);
+                
                 await this.refreshHitPoints();
+            },
+            
+            advanceAutoCue(department, markedType, markedNote) {
+                if (!this.autoIterateCues) return;
+                if (department !== 'music') return;
+                if (markedType !== 'music-in' && markedType !== 'music-out') return;
+                
+                // Adopt the user's actual naming as ground truth: if the note they
+                // marked matches "<prefix><number>_In/Out" (e.g. "2m14_In"), sync our
+                // counter to it - handles reel changes and manual renumbering.
+                const m = (markedNote || '').match(/^(.*?)(\d+)_(in|out)$/i);
+                if (m) {
+                    this.cuePrefix = m[1];
+                    this.nextCueNumber = parseInt(m[2], 10);
+                    // If they marked an In, next is that cue's Out; if an Out, next cue's In
+                    if (m[3].toLowerCase() === 'in') {
+                        this.nextCueIsIn = false;
+                    } else {
+                        this.nextCueIsIn = true;
+                        this.nextCueNumber += 1;
+                    }
+                } else {
+                    // Note didn't follow the pattern - still alternate based on marker type
+                    if (markedType === 'music-in') {
+                        this.nextCueIsIn = false;
+                    } else {
+                        this.nextCueIsIn = true;
+                        this.nextCueNumber += 1;
+                    }
+                }
+                
+                this.applyAutoCue();
+            },
+            
+            applyAutoCue() {
+                // Set the marker type dropdown and pre-fill the note with the next cue
+                const markerSelect = document.getElementById('markerType');
+                const noteInput = document.getElementById('hitPointNote');
+                const nextType = this.nextCueIsIn ? 'music-in' : 'music-out';
+                const cueName = `${this.cuePrefix}${String(this.nextCueNumber).padStart(2, '0')}_${this.nextCueIsIn ? 'In' : 'Out'}`;
+                
+                // Only set the dropdown if that option exists in the current department
+                if (markerSelect && Array.from(markerSelect.options).some(o => o.value === nextType)) {
+                    markerSelect.value = nextType;
+                }
+                if (noteInput && !noteInput.value.trim()) {
+                    noteInput.value = cueName;
+                }
+                
+                const status = document.getElementById('autoIterateStatus');
+                if (status) status.textContent = `Next: ${cueName}`;
+            },
+            
+            toggleAutoIterate() {
+                this.autoIterateCues = document.getElementById('autoIterateCues').checked;
+                const status = document.getElementById('autoIterateStatus');
+                if (this.autoIterateCues) {
+                    this.applyAutoCue();
+                    this.showMessage('✓ Auto-iterate cues enabled');
+                } else {
+                    if (status) status.textContent = 'Off';
+                    this.showMessage('Auto-iterate cues disabled');
+                }
             },
             
             async refreshHitPoints() {
